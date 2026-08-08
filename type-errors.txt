@@ -1,0 +1,182 @@
+﻿src/features/admin-management/pages/AdminDetailPage.tsx(1,34): error TS1127: Invalid character.
+src/features/admin-management/pages/AdminDetailPage.tsx(1,36): error TS1127: Invalid character.
+src/features/admin-management/pages/AdminDetailPage.tsx(1,37): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/admin-management/pages/AdminDetailPage.tsx(1,58): error TS1434: Unexpected keyword or identifier.
+src/features/admin-management/pages/AdminsPage.tsx(1,34): error TS1127: Invalid character.
+src/features/admin-management/pages/AdminsPage.tsx(1,36): error TS1127: Invalid character.
+src/features/admin-management/pages/AdminsPage.tsx(1,37): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/admin-management/pages/AdminsPage.tsx(1,58): error TS1434: Unexpected keyword or identifier.
+src/features/admin-management/pages/ManagersPage.tsx(1,34): error TS1127: Invalid character.
+src/features/admin-management/pages/ManagersPage.tsx(1,36): error TS1127: Invalid character.
+src/features/admin-management/pages/ManagersPage.tsx(1,37): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/admin-management/pages/ManagersPage.tsx(1,58): error TS1434: Unexpected keyword or identifier.
+src/features/companies/pages/CompaniesPage.tsx(1,34): error TS1127: Invalid character.
+src/features/companies/pages/CompaniesPage.tsx(1,36): error TS1127: Invalid character.
+src/features/companies/pages/CompaniesPage.tsx(1,37): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/companies/pages/CompaniesPage.tsx(1,58): error TS1434: Unexpected keyword or identifier.
+src/features/companies/pages/CompanyDetailPage.tsx(1,34): error TS1127: Invalid character.
+src/features/companies/pages/CompanyDetailPage.tsx(1,36): error TS1127: Invalid character.
+src/features/companies/pages/CompanyDetailPage.tsx(1,37): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/companies/pages/CompanyDetailPage.tsx(1,58): error TS1434: Unexpected keyword or identifier.
+src/features/dashboard/pages/DashboardPage.tsx(1,34): error TS1127: Invalid character.
+src/features/dashboard/pages/DashboardPage.tsx(1,36): error TS1127: Invalid character.
+src/features/dashboard/pages/DashboardPage.tsx(1,37): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/dashboard/pages/DashboardPage.tsx(1,58): error TS1434: Unexpected keyword or identifier.
+src/features/dashboard/pages/SettingsPage.tsx(1,34): error TS1127: Invalid character.
+src/features/dashboard/pages/SettingsPage.tsx(1,36): error TS1127: Invalid character.
+src/features/dashboard/pages/SettingsPage.tsx(1,37): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/dashboard/pages/SettingsPage.tsx(1,58): error TS1434: Unexpected keyword or identifier.
+src/features/expenses/pages/ExpensesPage.tsx(1,34): error TS1127: Invalid character.
+src/features/expenses/pages/ExpensesPage.tsx(1,36): error TS1127: Invalid character.
+src/features/expenses/pages/ExpensesPage.tsx(1,37): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/expenses/pages/ExpensesPage.tsx(1,58): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(1,34): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(1,36): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(1,37): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(1,58): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(2,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(2,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(2,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(2,78): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(3,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(3,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(3,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(3,116): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(4,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(4,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(4,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(4,62): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(5,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(5,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(5,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(5,61): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(6,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(6,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(6,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(6,60): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(7,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(7,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(7,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(7,96): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(8,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(8,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(8,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(8,71): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(9,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(9,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(9,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(9,69): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(10,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(10,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(10,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(10,67): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(11,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(11,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(11,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(11,72): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(12,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(12,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(12,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(12,71): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(13,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(13,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(13,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(13,72): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(14,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(14,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(14,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(14,68): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(15,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(15,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(15,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(15,71): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(16,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(16,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(16,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(16,68): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(17,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(17,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(17,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(17,64): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(18,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(18,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(18,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(18,86): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(19,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(19,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(19,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectDetailPage.tsx(19,67): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectDetailPage.tsx(20,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectDetailPage.tsx(20,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(1,34): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(1,36): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(1,37): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectsPage.tsx(1,58): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectsPage.tsx(2,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(2,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(2,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectsPage.tsx(2,74): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectsPage.tsx(3,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(3,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(3,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectsPage.tsx(3,56): error TS2457: Type alias name cannot be 'type'.
+src/features/projects/pages/ProjectsPage.tsx(3,73): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectsPage.tsx(4,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(4,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(4,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectsPage.tsx(4,56): error TS2457: Type alias name cannot be 'type'.
+src/features/projects/pages/ProjectsPage.tsx(4,75): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectsPage.tsx(5,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(5,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(5,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectsPage.tsx(5,56): error TS2457: Type alias name cannot be 'type'.
+src/features/projects/pages/ProjectsPage.tsx(5,72): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectsPage.tsx(6,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(6,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(6,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectsPage.tsx(6,56): error TS2457: Type alias name cannot be 'type'.
+src/features/projects/pages/ProjectsPage.tsx(6,73): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectsPage.tsx(7,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(7,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(7,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectsPage.tsx(7,56): error TS2457: Type alias name cannot be 'type'.
+src/features/projects/pages/ProjectsPage.tsx(7,75): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectsPage.tsx(8,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(8,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(8,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectsPage.tsx(8,74): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectsPage.tsx(9,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(9,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(9,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectsPage.tsx(9,56): error TS2457: Type alias name cannot be 'type'.
+src/features/projects/pages/ProjectsPage.tsx(9,68): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectsPage.tsx(10,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(10,42): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(10,43): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/projects/pages/ProjectsPage.tsx(10,85): error TS1434: Unexpected keyword or identifier.
+src/features/projects/pages/ProjectsPage.tsx(11,40): error TS1127: Invalid character.
+src/features/projects/pages/ProjectsPage.tsx(11,42): error TS1127: Invalid character.
+src/features/reports/pages/ReportsPage.tsx(1,34): error TS1127: Invalid character.
+src/features/reports/pages/ReportsPage.tsx(1,36): error TS1127: Invalid character.
+src/features/reports/pages/ReportsPage.tsx(1,37): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/reports/pages/ReportsPage.tsx(1,58): error TS1434: Unexpected keyword or identifier.
+src/features/tenant-management/pages/TenantsPage.tsx(1,34): error TS1127: Invalid character.
+src/features/tenant-management/pages/TenantsPage.tsx(1,36): error TS1127: Invalid character.
+src/features/tenant-management/pages/TenantsPage.tsx(1,37): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/tenant-management/pages/TenantsPage.tsx(1,58): error TS1434: Unexpected keyword or identifier.
+src/features/time-tracking/pages/AttendancePage.tsx(1,34): error TS1127: Invalid character.
+src/features/time-tracking/pages/AttendancePage.tsx(1,36): error TS1127: Invalid character.
+src/features/time-tracking/pages/AttendancePage.tsx(1,37): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/time-tracking/pages/AttendancePage.tsx(1,67): error TS1434: Unexpected keyword or identifier.
+src/features/time-tracking/pages/TimeAdjustmentRequestsPage.tsx(1,34): error TS1127: Invalid character.
+src/features/time-tracking/pages/TimeAdjustmentRequestsPage.tsx(1,36): error TS1127: Invalid character.
+src/features/time-tracking/pages/TimeAdjustmentRequestsPage.tsx(1,37): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/time-tracking/pages/TimeAdjustmentRequestsPage.tsx(1,58): error TS1434: Unexpected keyword or identifier.
+src/features/workforce/pages/WorkerDetailPage.tsx(1,34): error TS1127: Invalid character.
+src/features/workforce/pages/WorkerDetailPage.tsx(1,36): error TS1127: Invalid character.
+src/features/workforce/pages/WorkerDetailPage.tsx(1,37): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/workforce/pages/WorkerDetailPage.tsx(1,58): error TS1434: Unexpected keyword or identifier.
+src/features/workforce/pages/WorkforcePage.tsx(1,34): error TS1127: Invalid character.
+src/features/workforce/pages/WorkforcePage.tsx(1,36): error TS1127: Invalid character.
+src/features/workforce/pages/WorkforcePage.tsx(1,37): error TS1435: Unknown keyword or identifier. Did you mean 'import'?
+src/features/workforce/pages/WorkforcePage.tsx(1,67): error TS1434: Unexpected keyword or identifier.

@@ -1,0 +1,202 @@
+import { PayrollConfig } from './types';
+
+export class PayrollCalculator {
+    /**
+     * Calculate Canadian payroll deductions and contributions
+     */
+    static calculatePayroll(
+        hoursWorked: number,
+        hourlyRate: number,
+        config: PayrollConfig
+    ) {
+        const grossPay = hoursWorked * hourlyRate;
+
+        // Calculate deductions
+        const cppEmployee = (grossPay * config.cppEmployee) / 100;
+        const eiEmployee = (grossPay * config.eiEmployee) / 100;
+        const federalTax = (grossPay * config.federalTax) / 100;
+        const provincialTax = (grossPay * config.provincialTax) / 100;
+
+        const totalDeductions = cppEmployee + eiEmployee + federalTax + provincialTax;
+
+        // Calculate employer contributions
+        const cppEmployer = (grossPay * config.cppEmployer) / 100;
+        const eiEmployer = (grossPay * config.eiEmployer) / 100;
+        const wsibEmployer = (grossPay * config.wsibEmployer) / 100;
+
+        // Calculate vacation pay
+        const vacationPay = (grossPay * config.vacationPay) / 100;
+
+        // Calculate net pay
+        const netPay = grossPay - totalDeductions;
+
+        return {
+            grossPay: parseFloat(grossPay.toFixed(2)),
+            deductions: {
+                cppEmployee: parseFloat(cppEmployee.toFixed(2)),
+                eiEmployee: parseFloat(eiEmployee.toFixed(2)),
+                federalTax: parseFloat(federalTax.toFixed(2)),
+                provincialTax: parseFloat(provincialTax.toFixed(2))
+            },
+            totalDeductions: parseFloat(totalDeductions.toFixed(2)),
+            employerContributions: {
+                cppEmployer: parseFloat(cppEmployer.toFixed(2)),
+                eiEmployer: parseFloat(eiEmployer.toFixed(2)),
+                wsibEmployer: parseFloat(wsibEmployer.toFixed(2))
+            },
+            vacationPay: parseFloat(vacationPay.toFixed(2)),
+            netPay: parseFloat(netPay.toFixed(2))
+        };
+    }
+
+    /**
+     * Format currency in CAD
+     */
+    static formatCurrency(amount: number): string {
+        return new Intl.NumberFormat('en-CA', {
+            style: 'currency',
+            currency: 'CAD'
+        }).format(amount);
+    }
+
+    /**
+     * Calculate total employer cost
+     */
+    static calculateEmployerCost(
+        grossPay: number,
+        employerContributions: {
+            cppEmployer: number;
+            eiEmployer: number;
+            wsibEmployer: number;
+        }
+    ): number {
+        const total =
+            grossPay +
+            employerContributions.cppEmployer +
+            employerContributions.eiEmployer +
+            employerContributions.wsibEmployer;
+        return parseFloat(total.toFixed(2));
+    }
+}
+
+/**
+ * Generate a unique shareable link
+ */
+export function generatePublicLink(type: 'company' | 'project', id: string, name: string): string {
+    const slug = name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+    return `https://finispro.app/public/${id}-${slug}`;
+}
+
+/**
+ * Format date range for reports
+ */
+export function formatDateRange(startDate: string, endDate: string): string {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+    return `${formatter.format(start)} - ${formatter.format(end)}`;
+}
+
+/**
+ * Calculate hours between two times
+ */
+export function calculateHours(startTime: string, endTime: string): number {
+    const start = new Date(`2000-01-01T${startTime}`);
+    const end = new Date(`2000-01-01T${endTime}`);
+    const diff = end.getTime() - start.getTime();
+    return parseFloat((diff / (1000 * 60 * 60)).toFixed(2));
+}
+
+/**
+ * Get status badge color
+ */
+export function getStatusColor(status: string): string {
+    const colors: Record<string, string> = {
+        active: 'bg-green-100 text-green-800',
+        inactive: 'bg-gray-100 text-gray-800',
+        pending: 'bg-yellow-100 text-yellow-800',
+        approved: 'bg-green-100 text-green-800',
+        rejected: 'bg-red-100 text-red-800',
+        denied: 'bg-red-100 text-red-800',
+        completed: 'bg-blue-100 text-blue-800',
+        in_progress: 'bg-purple-100 text-purple-800',
+        planning: 'bg-gray-100 text-gray-800',
+        disabled: 'bg-red-100 text-red-800',
+        present: 'bg-green-100 text-green-800',
+        absent: 'bg-red-100 text-red-800',
+        late: 'bg-orange-100 text-orange-800',
+        early_departure: 'bg-orange-100 text-orange-800',
+        paid: 'bg-blue-100 text-blue-800',
+        draft: 'bg-gray-100 text-gray-800',
+        suspended: 'bg-red-100 text-red-800',
+        trial: 'bg-purple-100 text-purple-800'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+}
+
+/**
+ * Calculate distance between two coordinates (Haversine formula)
+ */
+export function calculateDistance(
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number
+): number {
+    const R = 6371; // Radius of the Earth in km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c * 1000; // Distance in meters
+    return parseFloat(distance.toFixed(2));
+}
+
+/**
+ * Check if a point is inside a polygon (geofence)
+ */
+export function isPointInPolygon(
+    point: { lat: number; lng: number },
+    polygon: Array<{ lat: number; lng: number }>
+): boolean {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i].lat;
+        const yi = polygon[i].lng;
+        const xj = polygon[j].lat;
+        const yj = polygon[j].lng;
+
+        const intersect =
+            yi > point.lng !== yj > point.lng &&
+            point.lat < ((xj - xi) * (point.lng - yi)) / (yj - yi) + xi;
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
+
+/**
+ * Generate random ID
+ */
+export function generateId(): string {
+    return Math.random().toString(36).substring(2, 9);
+}
+
+/**
+ * Truncate text
+ */
+export function truncate(text: string, length: number): string {
+    if (text.length <= length) return text;
+    return text.substring(0, length) + '...';
+}

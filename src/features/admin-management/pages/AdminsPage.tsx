@@ -1,0 +1,441 @@
+import { useState } from 'react';
+import { Plus, Search, Mail, Phone, MoreVertical, Users } from 'lucide-react';
+import { Card } from '@/shared/components/ui/Card';
+import { Button } from '@/shared/components/ui/Button';
+import { PageHeader } from '@/shared/components/ui/PageHeader';
+import { Input } from '@/shared/components/ui/Input';
+import { Badge } from '@/shared/components/ui/Badge';
+import { Table } from '@/shared/components/ui/Table';
+import { Modal } from '@/shared/components/ui/Modal';
+import { Select } from '@/shared/components/ui/Select';
+import { getStatusColor } from '@/shared/utils';
+import { useNavigate } from 'react-router-dom';
+import { Column } from '@/shared/components/ui/Table';
+import {
+    useGetAdminStatsQuery,
+    useGetAdminListQuery,
+    useGetPendingInvitationsQuery,
+    useSendInviteMutation,
+    useResendInvitationMutation,
+    useCancelInvitationMutation,
+    useUpdateUserStatusMutation,
+    AdminUser,
+    PendingInvitation,
+} from '@/store/teamManagementApi';
+
+export function AdminsPage() {
+    const [showInviteModal, setShowInviteModal] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
+
+    // ── API Queries ──────────────────────────────────────────────────────
+    const { data: stats, isLoading: statsLoading } = useGetAdminStatsQuery();
+
+    const { data: admins = [], isLoading: adminsLoading } = useGetAdminListQuery({
+        search: searchQuery || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+    });
+
+    const { data: pendingInvitations = [], isLoading: invitationsLoading } =
+        useGetPendingInvitationsQuery({});
+
+    // ── Mutations ────────────────────────────────────────────────────────
+    const [resendInvitation, { isLoading: resending }] = useResendInvitationMutation();
+    const [cancelInvitation, { isLoading: cancelling }] = useCancelInvitationMutation();
+    const [updateUserStatus] = useUpdateUserStatusMutation();
+
+    const handleResend = async (id: string) => {
+        try {
+            await resendInvitation(id).unwrap();
+        } catch (err) {
+            console.error('Resend failed:', err);
+        }
+    };
+
+    const handleCancel = async (id: string) => {
+        try {
+            await cancelInvitation(id).unwrap();
+        } catch (err) {
+            console.error('Cancel failed:', err);
+        }
+    };
+
+    const handleDisable = async (userId: string, currentStatus: string) => {
+        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+        try {
+            await updateUserStatus({ id: userId, status: newStatus }).unwrap();
+        } catch (err) {
+            console.error('Status update failed:', err);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <PageHeader
+                title="Admin Management"
+                description="Manage administrator accounts and invitations"
+                icon={Users}
+            >
+                <Button onClick={() => setShowInviteModal(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Invite Admin
+                </Button>
+            </PageHeader>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="p-6">
+                    <div className="text-sm text-gray-600">Total Admins</div>
+                    <div className="text-3xl font-bold text-gray-900 mt-2">
+                        {statsLoading ? '—' : stats?.totalAdmins ?? 0}
+                    </div>
+                </Card>
+                <Card className="p-6">
+                    <div className="text-sm text-gray-600">Active</div>
+                    <div className="text-3xl font-bold text-green-600 mt-2">
+                        {statsLoading ? '—' : stats?.active ?? 0}
+                    </div>
+                </Card>
+                <Card className="p-6">
+                    <div className="text-sm text-gray-600">Pending Invitations</div>
+                    <div className="text-3xl font-bold text-blue-600 mt-2">
+                        {statsLoading ? '—' : stats?.pendingInvitations ?? 0}
+                    </div>
+                </Card>
+            </div>
+
+            {/* Pending Invitations */}
+            {!invitationsLoading && pendingInvitations.length > 0 && (
+                <Card className="p-6">
+                    <h3 className="text-lg font-semibold mb-4">Pending Invitations</h3>
+                    <div className="space-y-3">
+                        {pendingInvitations.map((invitation: PendingInvitation) => (
+                            <div
+                                key={invitation.id}
+                                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                            >
+                                <div className="flex items-center gap-4">
+                                    {invitation.email ? (
+                                        <div className="flex items-center gap-2">
+                                            <Mail className="w-4 h-4 text-gray-400" />
+                                            <span className="font-medium">{invitation.email}</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <Phone className="w-4 h-4 text-gray-400" />
+                                            <span className="font-medium">{invitation.phone}</span>
+                                        </div>
+                                    )}
+                                    <Badge variant="secondary">{invitation.role}</Badge>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-600">
+                                        Expires {new Date(invitation.expiresAt).toLocaleDateString()}
+                                    </span>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={resending}
+                                        onClick={() => handleResend(invitation.id)}
+                                    >
+                                        Resend
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={cancelling}
+                                        onClick={() => handleCancel(invitation.id)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            )}
+
+            {/* Filters */}
+            <Card className="p-6">
+                <div className="flex gap-4">
+                    <div className="flex-1">
+                        <Input
+                            placeholder="Search by name or email..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            startIcon={<Search className="w-4 h-4" />}
+                        />
+                    </div>
+                    <Select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="w-48"
+                        options={[
+                            { value: 'all', label: 'All Status' },
+                            { value: 'active', label: 'Active' },
+                            { value: 'pending', label: 'Pending' },
+                            { value: 'inactive', label: 'Inactive' },
+                            { value: 'suspended', label: 'Suspended' },
+                        ]}
+                    />
+                </div>
+            </Card>
+
+            {/* Admins Table */}
+            <Card>
+                {adminsLoading ? (
+                    <div className="p-8 text-center text-gray-500">Loading...</div>
+                ) : (
+                    <AdminTable data={admins} onDisable={handleDisable} />
+                )}
+            </Card>
+
+            {/* Invite Modal */}
+            <InviteAdminModal
+                open={showInviteModal}
+                onClose={() => setShowInviteModal(false)}
+            />
+        </div>
+    );
+}
+
+// ── Admin Table ──────────────────────────────────────────────────────────────
+
+function AdminTable({
+    data,
+    onDisable,
+}: {
+    data: AdminUser[];
+    onDisable: (id: string, currentStatus: string) => void;
+}) {
+    const navigate = useNavigate();
+
+    const columns: Column<AdminUser>[] = [
+        {
+            key: 'fullName',
+            header: 'Admin',
+            render: (row) => (
+                <div className="flex items-center gap-3">
+                    {row.avatarUrl ? (
+                        <img
+                            src={row.avatarUrl}
+                            alt={row.fullName}
+                            className="w-10 h-10 rounded-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                            <span className="text-blue-600 font-semibold text-sm">
+                                {row.fullName
+                                    .split(' ')
+                                    .map((n) => n[0])
+                                    .join('')}
+                            </span>
+                        </div>
+                    )}
+                    <div>
+                        <div className="font-medium text-gray-900">{row.fullName}</div>
+                        <div className="text-sm text-gray-500">{row.email}</div>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            key: 'role',
+            header: 'Role',
+            render: (row) => (
+                <Badge variant={row.role === 'admin' ? 'default' : 'secondary'}>
+                    {row.role.replace('_', ' ')}
+                </Badge>
+            ),
+        },
+        {
+            key: 'contact',
+            header: 'Contact',
+            render: (row) => (
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm">
+                        <Mail className="w-3 h-3 text-gray-400" />
+                        {row.email}
+                    </div>
+                    {row.phone && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Phone className="w-3 h-3 text-gray-400" />
+                            {row.phone}
+                        </div>
+                    )}
+                </div>
+            ),
+        },
+        {
+            key: 'status',
+            header: 'Status',
+            render: (row) => (
+                <Badge className={getStatusColor(row.status)}>{row.status}</Badge>
+            ),
+        },
+        {
+            key: 'lastLoginAt',
+            header: 'Last Login',
+            render: (row) => (
+                <span className="text-sm text-gray-600">
+                    {row.lastLoginAt
+                        ? new Date(row.lastLoginAt).toLocaleString()
+                        : 'Never'}
+                </span>
+            ),
+        },
+        {
+            key: 'actions',
+            header: 'Actions',
+            render: (row) => (
+                <div
+                    className="flex items-center gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {/* Disable/Enable — pending ও active/inactive উভয়ের জন্য */}
+                    {row.status !== 'suspended' && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onDisable(row.id, row.status)}
+                        >
+                            {row.status === 'active' ? 'Disable' : 'Enable'}
+                        </Button>
+                    )}
+                    <Button size="sm" variant="ghost">
+                        <MoreVertical className="w-4 h-4" />
+                    </Button>
+                </div>
+            ),
+        },
+    ];
+
+    return (
+        <Table
+            columns={columns}
+            data={data}
+            onRowClick={(row) => navigate(`/admins/${row.id}`)}
+        />
+    );
+}
+
+// ── Invite Modal ─────────────────────────────────────────────────────────────
+
+function InviteAdminModal({
+    open,
+    onClose,
+}: {
+    open: boolean;
+    onClose: () => void;
+}) {
+    const [inviteMethod, setInviteMethod] = useState<'email' | 'phone'>('email');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [role, setRole] = useState('admin');
+
+    const [sendInvite, { isLoading }] = useSendInviteMutation();
+
+    const handleInvite = async () => {
+        try {
+            await sendInvite({
+                ...(inviteMethod === 'email' ? { email } : { phone }),
+                role,
+            }).unwrap();
+            // Reset form
+            setEmail('');
+            setPhone('');
+            setRole('admin');
+            onClose();
+        } catch (err) {
+            console.error('Invite failed:', err);
+        }
+    };
+
+    const isDisabled =
+        isLoading ||
+        (inviteMethod === 'email' ? !email.trim() : !phone.trim());
+
+    return (
+        <Modal isOpen={open} onClose={onClose} title="Invite Administrator">
+            <div className="space-y-4">
+                {/* Invite Method */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Invitation Method
+                    </label>
+                    <div className="flex gap-4">
+                        <Button
+                            variant={inviteMethod === 'email' ? 'default' : 'outline'}
+                            onClick={() => setInviteMethod('email')}
+                            className="flex-1"
+                        >
+                            <Mail className="w-4 h-4 mr-2" />
+                            Email
+                        </Button>
+                        <Button
+                            variant={inviteMethod === 'phone' ? 'default' : 'outline'}
+                            onClick={() => setInviteMethod('phone')}
+                            className="flex-1"
+                        >
+                            <Phone className="w-4 h-4 mr-2" />
+                            Phone
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Email or Phone */}
+                {inviteMethod === 'email' ? (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Email Address
+                        </label>
+                        <Input
+                            type="email"
+                            placeholder="admin@example.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                    </div>
+                ) : (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Phone Number
+                        </label>
+                        <Input
+                            type="tel"
+                            placeholder="+1-XXX-XXX-XXXX"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                        />
+                    </div>
+                )}
+
+                {/* Role */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Role
+                    </label>
+                    <Select
+                        value={role}
+                        onChange={(e) => setRole(e.target.value)}
+                        options={[
+                            { value: 'admin', label: 'Admin' },
+                            { value: 'manager', label: 'Manager' },
+                        ]}
+                    />
+                </div>
+
+                {/* Actions */}
+                <div className="flex justify-end gap-3 mt-6">
+                    <Button variant="outline" onClick={onClose} disabled={isLoading}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleInvite} disabled={isDisabled}>
+                        {isLoading ? 'Sending...' : 'Send Invitation'}
+                    </Button>
+                </div>
+            </div>
+        </Modal>
+    );
+}
