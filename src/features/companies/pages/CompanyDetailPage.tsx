@@ -20,6 +20,8 @@ import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, A
 import { formatCurrency } from '@/shared/utils';
 import { mapBackendCompanyProjectToView, mapBackendProfileToCompany } from '@/store/companiesApi';
 import { useCreateProject } from '@/features/projects/hooks';
+import { apiClient } from '@/services/api/client';
+import { Link as LinkIcon } from 'lucide-react';
 
 const getLinkHostname = (url?: string) => {
   if (!url) return 'N/A';
@@ -48,6 +50,30 @@ export function CompanyDetailPage() {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+  
+  const handleGenerateLink = async () => {
+    if (!company?.id) return;
+    try {
+      setIsGeneratingLink(true);
+      const res = await apiClient.post(`/admin/companies/${company.id}/share`);
+      // Note: Backend might return nested data depending on interceptor
+      const shareToken = (res.data as any)?.data?.shareToken || (res.data as any)?.shareToken || (res as any).shareToken;
+      if (shareToken) {
+        const dashboardUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+        const link = `${dashboardUrl}/public/company/${shareToken}`;
+        await navigator.clipboard.writeText(link);
+        alert('Public link generated and copied to clipboard: ' + link);
+      } else {
+        alert('Failed to generate link: shareToken missing');
+      }
+    } catch (err: any) {
+      console.error('Error generating link:', err);
+      alert('Error generating link: ' + (err.details?.message || err.message || 'Unknown error'));
+    } finally {
+      setIsGeneratingLink(false);
+    }
+  };
 
   const company = profile ? mapBackendProfileToCompany(profile) : undefined;
   const companyStats = profile?.stats;
@@ -170,6 +196,15 @@ export function CompanyDetailPage() {
           </div>
         </div>
         <div className="flex flex-wrap justify-center gap-3">
+          <Button
+            variant="outline"
+            className="gap-2 h-12 px-6 border-blue-200 text-[#1D4F6D] hover:bg-blue-50 font-bold"
+            onClick={handleGenerateLink}
+            disabled={isGeneratingLink}
+          >
+            <LinkIcon className="h-4 w-4" />
+            {isGeneratingLink ? 'Generating...' : 'Generate & Copy Link'}
+          </Button>
           <Button
             variant="outline"
             className="gap-2 h-12 px-6 border-gray-200 text-gray-600 hover:bg-blue-50 hover:text-[#1D4F6D] hover:border-blue-200 transition-all font-bold"

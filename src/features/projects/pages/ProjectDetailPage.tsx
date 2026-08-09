@@ -14,6 +14,8 @@ import { FinancialAnalysisChart } from '../components/FinancialAnalysisChart';
 import { CreateProjectModal } from '../components/CreateProjectModal';
 import { StatCard } from '@/features/dashboard/components/StatCard';
 import { useProject, useUpdateProject, useProjectAnalysis, useProjectFloorPlan } from '../hooks';
+import { apiClient } from '@/services/api/client';
+import { Link as LinkIcon } from 'lucide-react';
 
 export function ProjectDetailPage() {
   const authUser = (() => {
@@ -34,6 +36,29 @@ export function ProjectDetailPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+  
+  const handleGenerateLink = async () => {
+    if (!project?.id) return;
+    try {
+      setIsGeneratingLink(true);
+      const res = await apiClient.post(`/admin/projects/${project.id}/share`);
+      const shareToken = (res.data as any)?.data?.shareToken || (res.data as any)?.shareToken || (res as any).shareToken;
+      if (shareToken) {
+        const dashboardUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+        const link = `${dashboardUrl}/public/project/${shareToken}`;
+        await navigator.clipboard.writeText(link);
+        alert('Public link generated and copied to clipboard: ' + link);
+      } else {
+        alert('Failed to generate link: shareToken missing');
+      }
+    } catch (err: any) {
+      console.error('Error generating link:', err);
+      alert('Error generating link: ' + (err.details?.message || err.message || 'Unknown error'));
+    } finally {
+      setIsGeneratingLink(false);
+    }
+  };
   const structureFloors = floorPlanData?.length ? floorPlanData : project?.floors ?? [];
   const structureSummary = useMemo(() => {
     return structureFloors.reduce(
@@ -42,12 +67,12 @@ export function ProjectDetailPage() {
         const floorSubTaskCount =
           floor.taskCounts?.total ??
           ((floor.tasks?.length ?? 0) +
-            (floor.rooms?.reduce((sum, unit) => sum + (unit.tasks?.length ?? 0), 0) ?? 0));
+            (floor.rooms?.reduce((sum: number, unit: any) => sum + (unit.tasks?.length ?? 0), 0) ?? 0));
         const floorCompletedCount =
           floor.taskCounts?.completed ??
-          ((floor.tasks?.filter((task) => task.status === 'completed').length ?? 0) +
+          ((floor.tasks?.filter((task: any) => task.status === 'completed').length ?? 0) +
             (floor.rooms?.reduce(
-              (sum, unit) => sum + (unit.tasks?.filter((task) => task.status === 'completed').length ?? 0),
+              (sum: number, unit: any) => sum + (unit.tasks?.filter((task: any) => task.status === 'completed').length ?? 0),
               0,
             ) ?? 0));
 
@@ -84,7 +109,7 @@ export function ProjectDetailPage() {
   const taskCount = structureSummary.subTasks || project.counts?.tasks || project.tasks?.length || 0;
   const floorCount = project.counts?.floors ?? project.floors?.length ?? 0;
 
-  const tabs = [
+  const tabs: { id: string, label: string, count?: number }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'scope_structure', label: 'Scope & Structure' },
     { id: 'documents', label: 'Documents' }
@@ -164,6 +189,15 @@ export function ProjectDetailPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant="outline"
+              className="gap-2 h-11 px-5 border-blue-200 text-blue-600 hover:bg-blue-50 transition-all font-bold"
+              onClick={handleGenerateLink}
+              disabled={isGeneratingLink}
+            >
+              <LinkIcon className="h-4 w-4" />
+              {isGeneratingLink ? 'Generating...' : 'Generate Public Link'}
+            </Button>
             {!isSuperAdmin && (
               <Button
                 variant="outline"
@@ -438,7 +472,7 @@ export function ProjectDetailPage() {
         )}
 
         {activeTab === 'scope_structure' && (
-          <ProjectStructure projectType={project.type} initialFloors={structureFloors} />
+          <ProjectStructure projectType={project.type as any} initialFloors={structureFloors as any} />
         )}
 
         {!isSuperAdmin && activeTab === 'team' && <ProjectTeam />}
