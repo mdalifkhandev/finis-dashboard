@@ -134,7 +134,7 @@ export function ProjectsPage() {
           setTimeFilter('custom');
         }}
         onCreateProject={() => {
-          if (!isSuperAdmin) setIsCreateModalOpen(true);
+          setIsCreateModalOpen(true);
         }}
       />
 
@@ -187,14 +187,12 @@ export function ProjectsPage() {
         />
       )}
 
-      {!isSuperAdmin && (
-        <CreateProjectModal
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          onCreateProject={handleCreateProject}
-          companies={companies}
-        />
-      )}
+      <CreateProjectModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreateProject={handleCreateProject}
+        companies={companies}
+      />
     </div>
   );
 }

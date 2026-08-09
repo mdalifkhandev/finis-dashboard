@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Building } from 'lucide-react';
 import {
     useGetUserChatThreadsQuery,
     useGetUserSupportThreadQuery,
@@ -21,7 +21,14 @@ interface ChatSidebarProps {
     refreshSignal?: number;
 }
 
-function Avatar({ user }: { user: { fullName: string; avatarUrl?: string | null } }) {
+function Avatar({ user, type }: { user: { fullName: string; avatarUrl?: string | null }; type?: string }) {
+    if (type === 'project') {
+        return (
+            <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-[#2D5F82]">
+                <Building className="w-6 h-6" />
+            </div>
+        );
+    }
     const avatarSrc = getFullUrl(user.avatarUrl ?? undefined);
     if (avatarSrc) {
         return <img src={avatarSrc} alt={user.fullName} className="w-14 h-14 rounded-full object-cover" />;
@@ -84,7 +91,7 @@ function ThreadItem({
             )}
         >
             <div className="relative shrink-0">
-                <Avatar user={{ fullName: displayName, avatarUrl: avatarUser?.avatarUrl }} />
+                <Avatar user={{ fullName: displayName, avatarUrl: avatarUser?.avatarUrl }} type={thread.type} />
             </div>
             <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">

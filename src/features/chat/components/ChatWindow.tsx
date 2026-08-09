@@ -1,4 +1,4 @@
-import { Send, Paperclip, MapPin, MoreVertical, ShieldAlert, Archive, Download, User, Eye, ExternalLink } from 'lucide-react';
+import { Send, Paperclip, MapPin, MoreVertical, ShieldAlert, Archive, Download, User, Eye, ExternalLink, Building } from 'lucide-react';
 import { Card } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
@@ -288,10 +288,10 @@ export function ChatWindow({
                         </div>
                     ) : (
                         <div className={cn(
-                            "w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-xs",
-                            conversation.type === 'project' ? "bg-orange-500" : "bg-purple-500"
+                            "w-10 h-10 rounded-full flex items-center justify-center text-[#2D5F82] font-black text-xs",
+                            conversation.type === 'project' ? "bg-blue-100" : "bg-purple-100 text-purple-600"
                         )}>
-                            <Archive className="w-5 h-5" />
+                            {conversation.type === 'project' ? <Building className="w-5 h-5" /> : <Archive className="w-5 h-5" />}
                         </div>
                     )}
                     <div>
