@@ -33,6 +33,7 @@ const PublicSubscriptionPlansPage = lazy(() => import('@/features/tenant-managem
 const SubscriptionSuccessPage = lazy(() => import('@/features/tenant-management/pages/SubscriptionSuccessPage').then((m) => ({ default: m.SubscriptionSuccessPage })));
 const SubscriptionCancelPage = lazy(() => import('@/features/tenant-management/pages/SubscriptionCancelPage').then((m) => ({ default: m.SubscriptionCancelPage })));
 const SettingsPage = lazy(() => import('@/features/dashboard/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const PayrollPage = lazy(() => import('@/features/payroll/pages/PayrollPage').then((m) => ({ default: m.PayrollPage })));
 const PublicContentEditorPage = lazy(() => import('@/features/public-content/pages/PublicContentEditorPage').then((m) => ({ default: m.PublicContentEditorPage })));
 const NotificationsPage = lazy(() => import('@/features/dashboard/pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })));
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage })));
@@ -103,6 +104,7 @@ export function AppRouter() {
                     <Route path={ROUTES.TENANTS} element={<TenantsPage />} />
                     <Route path={ROUTES.SUBSCRIPTION_PLANS} element={<SubscriptionPlansPage />} />
                     <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
+                            <Route path="/payroll" element={<PayrollPage />} />
                     <Route path="/settings/content/:slug" element={<PublicContentEditorPage />} />
                     <Route path={ROUTES.NOTIFICATIONS} element={<NotificationsPage />} />
                 </Route>

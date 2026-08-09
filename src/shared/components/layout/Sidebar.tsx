@@ -3,7 +3,7 @@ import { cn } from '@/shared/utils';
 import {
   LayoutDashboard, Users, HardHat,
   Settings, LogOut, UserCog,
-  Clock, MapPin, MessageSquare, Building, FileBarChart, X, Briefcase, Package, DollarSign,
+  Clock, MapPin, MessageSquare, Building, FileBarChart, X, Briefcase, Package, DollarSign, Calculator,
   ChevronRight, ScrollText,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/Avatar';
@@ -34,7 +34,8 @@ const menuItems = [
     section: 'TIME & PAYROLL',
     items: [
       { icon: Clock, label: 'Time Tracking', path: '/time-tracking' },
-      { icon: MapPin, label: 'Geofencing', path: '/geofencing' }
+      { icon: MapPin, label: 'Geofencing', path: '/geofencing' },
+      { icon: Calculator, label: 'Payroll', path: '/payroll' }
     ]
   },
   {

@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { authApi } from './authApi';
 import { dashboardApi } from './dashboardApi';
 import { companiesApi } from './companiesApi';
+import { payrollApi } from './payrollApi';
 import { projectApi } from './projectApi';
 import { teamManagementApi } from './teamManagementApi';
 import { messageApi } from './messageApi';
@@ -20,6 +21,7 @@ export const store = configureStore({
         [authApi.reducerPath]: authApi.reducer,
         [dashboardApi.reducerPath]: dashboardApi.reducer,
         [companiesApi.reducerPath]: companiesApi.reducer,
+    [payrollApi.reducerPath]: payrollApi.reducer,
         [projectApi.reducerPath]: projectApi.reducer,
         [teamManagementApi.reducerPath]: teamManagementApi.reducer,
         [messageApi.reducerPath]: messageApi.reducer,
@@ -38,6 +40,7 @@ export const store = configureStore({
             authApi.middleware,
             dashboardApi.middleware,
             companiesApi.middleware,
+      payrollApi.middleware,
             projectApi.middleware,
             teamManagementApi.middleware,
             messageApi.middleware,
