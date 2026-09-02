@@ -17,8 +17,12 @@ export function LoginPage() {
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        const { accessToken, user } = await login({ identifier, password, rememberMe }).unwrap();
-        navigate(ROUTES.DASHBOARD, { replace: true });
+        try {
+            await login({ identifier, password, rememberMe }).unwrap();
+            navigate(ROUTES.DASHBOARD, { replace: true });
+        } catch (err) {
+            console.error('Login failed:', err);
+        }
     };
 
     return (
