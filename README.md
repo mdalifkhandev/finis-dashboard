@@ -16,31 +16,74 @@ src/
 └── store/                  # Client-side state (UI only)
 ```
 
-## 🚀 Quick Start
+## 🚀 Local Setup and Connection
 
-### Installation
+This dashboard connects to the NestJS API in the sibling `finis-backend`
+folder. The default local addresses are:
 
-```bash
-npm install
-```
+- Dashboard: `http://localhost:5173`
+- Backend REST and Socket.IO: `http://localhost:6000`
 
-### Development
+### Requirements
 
-```bash
-npm run dev
-```
+- Node.js 20 or 22
+- pnpm
+- The backend and its PostgreSQL database running for real data
 
-### Build
-
-```bash
-npm run build
-```
-
-### Preview Production Build
+### Install and configure
 
 ```bash
-npm run preview
+cd ~/Desktop/project/finis/finis-dashboard
+pnpm install
+cp .env.example .env
 ```
+
+Use this local `.env` configuration:
+
+```dotenv
+VITE_API_BASE_URL=http://localhost:6000
+VITE_APP_URL=http://localhost:5173
+VITE_ENV=development
+VITE_USE_MOCK_API=false
+VITE_GOOGLE_MAPS_API_KEY=
+VITE_APP_VERSION=1.0.0
+VITE_FEATURE_GEOFENCING=true
+VITE_FEATURE_CHAT=true
+VITE_FEATURE_REPORTS=true
+VITE_FEATURE_PAYROLL=true
+```
+
+`VITE_API_BASE_URL` is used for both HTTP requests and Socket.IO connections.
+Do not add a trailing slash.
+
+### Run development server
+
+Start the backend first, then run:
+
+```bash
+pnpm exec vite --host 0.0.0.0
+```
+
+Open `http://localhost:5173`. Using `--host 0.0.0.0` also lets a phone on the
+same network open `http://YOUR_COMPUTER_LAN_IP:5173`.
+
+If Vite selects another port because `5173` is busy, update both
+`VITE_APP_URL` here and `FRONTEND_URL` in `finis-backend/.env`.
+
+### Build and preview
+
+```bash
+pnpm build
+pnpm exec vite preview --host 0.0.0.0
+```
+
+### Verify the connection
+
+Open the browser developer tools and perform a login. API requests should go
+to `http://localhost:6000`, not port `5173`. A network error usually means the
+backend is stopped or `VITE_API_BASE_URL` is wrong. An HTTP `401`/`403` means
+the backend was reached but authentication or permissions rejected the
+request.
 
 ---
 
@@ -89,16 +132,18 @@ API service layer that abstracts backend communication:
 
 ## 🔌 Backend Integration
 
-**This frontend is 100% backend-integration ready.**
+Set `VITE_USE_MOCK_API=false` and point `VITE_API_BASE_URL` to the backend.
+Most active feature hooks already call the shared real API client in
+`src/services/api/client.ts`. Some older/demo services still fall back to
+`MockApiService`, so verify the individual feature before assuming it is fully
+connected.
 
-### For Backend Developers
+Authentication tokens are stored in browser storage and sent as
+`Authorization: Bearer <token>`. Chat, notifications, workforce, and
+geofencing use Socket.IO namespaces on the same backend origin.
 
-1. Create `src/services/api/realApi.ts`
-2. Implement methods matching `MockApiService` interface
-3. Set `VITE_USE_MOCK_API=false` in `.env`
-4. That's it! No UI changes needed.
-
-**See:** [`docs/BACKEND_INTEGRATION.md`](./docs/BACKEND_INTEGRATION.md) for detailed guide.
+See [`docs/BACKEND_INTEGRATION.md`](./docs/BACKEND_INTEGRATION.md) for endpoint
+details.
 
 ---
 
@@ -182,13 +227,13 @@ See [`docs/BACKEND_INTEGRATION.md`](./docs/BACKEND_INTEGRATION.md#example-adding
 ### Linting
 
 ```bash
-npm run lint
+pnpm lint
 ```
 
 ### Type Checking
 
 ```bash
-npx tsc --noEmit
+pnpm exec tsc --noEmit
 ```
 
 ---
