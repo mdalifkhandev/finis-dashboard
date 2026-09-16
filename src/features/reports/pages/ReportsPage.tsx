@@ -228,7 +228,6 @@ const REPORTS: ReportConfig[] = [
   { type: 'payroll', label: 'Payroll Reports', description: 'Worker pay, hours, and deductions', icon: CircleDollarSign },
   { type: 'project_invoices', label: 'Project Invoices', description: 'Budgets, spend, and progress', icon: Building2 },
   { type: 'worker_performance', label: 'Worker Performance', description: 'Attendance and task metrics', icon: TrendingUp },
-  { type: 'expense', label: 'Expense Reports', description: 'Approved, pending, and rejected costs', icon: FileText },
 ];
 
 const FREQUENCIES: Array<{ value: ReportFrequency; label: string }> = [
@@ -776,7 +775,7 @@ export function ReportsPage() {
         </div>
       )}
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {REPORTS.map((report) => {
           const Icon = report.icon;
           const isSelected = reportType === report.type;

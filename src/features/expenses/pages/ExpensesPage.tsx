@@ -64,7 +64,7 @@ export function ExpensesPage() {
     };
 
 
-    const pendingAmount = filteredExpenses.filter(e => e.status === 'pending').reduce((sum, e) => sum + e.amount, 0);
+    const pendingAmount = filteredExpenses.filter(e => e.status === 'pending').reduce((sum, e) => sum + (e.totalAmount ?? e.amount ?? 0), 0);
 
     return (
         <div className="space-y-6">
@@ -195,9 +195,19 @@ export function ExpensesPage() {
                             render: (expense) => <Badge variant="secondary">{expense.category}</Badge>
                         },
                         {
-                            key: 'amount',
-                            header: 'Amount',
-                            render: (expense) => <span className="font-semibold">${expense.amount.toFixed(2)}</span>
+                            key: 'subtotal',
+                            header: 'Subtotal',
+                            render: (expense) => <span className="text-gray-600">${(expense.subtotal ?? 0).toFixed(2)}</span>
+                        },
+                        {
+                            key: 'tax',
+                            header: 'Tax',
+                            render: (expense) => <span className="text-gray-600">${(expense.tax ?? 0).toFixed(2)}</span>
+                        },
+                        {
+                            key: 'totalAmount',
+                            header: 'Total Amount',
+                            render: (expense) => <span className="font-semibold text-gray-900">${(expense.totalAmount ?? expense.amount ?? 0).toFixed(2)}</span>
                         },
                         {
                             key: 'projectName',
@@ -263,12 +273,20 @@ export function ExpensesPage() {
                                 <div className="font-semibold">{selectedExpense.workerName}</div>
                             </div>
                             <div>
-                                <div className="text-sm text-gray-600">Amount</div>
-                                <div className="font-semibold text-lg text-gray-900">${selectedExpense.amount.toFixed(2)}</div>
-                            </div>
-                            <div>
                                 <div className="text-sm text-gray-600">Category</div>
                                 <div className="font-semibold">{selectedExpense.category}</div>
+                            </div>
+                            <div>
+                                <div className="text-sm text-gray-600">Subtotal</div>
+                                <div className="font-semibold text-gray-800">${(selectedExpense.subtotal ?? 0).toFixed(2)}</div>
+                            </div>
+                            <div>
+                                <div className="text-sm text-gray-600">Tax</div>
+                                <div className="font-semibold text-gray-800">${(selectedExpense.tax ?? 0).toFixed(2)}</div>
+                            </div>
+                            <div>
+                                <div className="text-sm text-gray-600">Total Amount</div>
+                                <div className="font-semibold text-lg text-indigo-700">${(selectedExpense.totalAmount ?? selectedExpense.amount ?? 0).toFixed(2)}</div>
                             </div>
                             <div>
                                 <div className="text-sm text-gray-600">Date</div>

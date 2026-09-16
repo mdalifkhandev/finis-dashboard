@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Building2,
   HardHat,
-  DollarSign,
   ClipboardList,
   CheckCircle2,
   CreditCard,
@@ -165,7 +164,6 @@ export function SuperAdminDashboard() {
     { type: 'payroll', label: 'Payroll', icon: FileText, hint: 'Worker payslips and deductions' },
     { type: 'project_invoices', label: 'Project Invoices', icon: ClipboardList, hint: 'Budgets, spending, and progress' },
     { type: 'worker_performance', label: 'Worker Performance', icon: TrendingUp, hint: 'Attendance and task metrics' },
-    { type: 'expense', label: 'Expenses', icon: DollarSign, hint: 'Approvals and reimbursements' },
   ];
 
   return (
@@ -363,7 +361,7 @@ export function SuperAdminDashboard() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-3">
               {reportShortcuts.map((report) => {
                 const Icon = report.icon;
                 return (

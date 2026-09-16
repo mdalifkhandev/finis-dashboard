@@ -282,7 +282,10 @@ export interface Expense {
   id: string;
   workerId: string;
   workerName: string;
-  amount: number;
+  subtotal: number;
+  tax: number;
+  totalAmount: number;
+  amount?: number;
   category: string;
   description: string;
   receiptUrl: string;
