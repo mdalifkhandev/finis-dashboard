@@ -315,8 +315,16 @@ export function InventoryPage() {
                         <InventoryTable
                             items={items}
                             searchQuery={searchQuery}
-                            onLogUsage={(item) => { setSelectedItem(item); setIsUsageModalOpen(true); }}
-                            onReportDamage={(item) => { setSelectedItem(item); setIsDamageModalOpen(true); }}
+                            onLogUsage={(item) => {
+                                const row = items.find((i) => i.id === item.id) ?? (item as InventoryRow);
+                                setSelectedItem(row);
+                                setIsUsageModalOpen(true);
+                            }}
+                            onReportDamage={(item) => {
+                                const row = items.find((i) => i.id === item.id) ?? (item as InventoryRow);
+                                setSelectedItem(row);
+                                setIsDamageModalOpen(true);
+                            }}
                         />
                     )}
                     {activeTab === 'usage' && <UsageLogTable logs={logs} searchQuery={searchQuery} />}

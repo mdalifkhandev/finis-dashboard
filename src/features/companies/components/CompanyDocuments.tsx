@@ -58,12 +58,14 @@ export function CompanyDocuments({ documents, companyId }: CompanyDocumentsProps
     const openDocument = (url?: string | null) => {
         if (!url) return;
         const finalUrl = getFullUrl(url);
+        if (!finalUrl) return;
         window.open(finalUrl, '_blank', 'noopener,noreferrer');
     };
 
     const downloadDocument = (url?: string | null, fileName?: string) => {
         if (!url) return;
         const finalUrl = getFullUrl(url);
+        if (!finalUrl) return;
         fetch(finalUrl)
             .then((response) => {
                 if (!response.ok) {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Download, Eye, Wallet, Clock3, CircleDollarSign, Package, ArrowRight } from 'lucide-react';
+import { Download, Eye, ArrowRight } from 'lucide-react';
 import { Card } from '@/shared/components/ui/Card';
 import { Table, Column } from '@/shared/components/ui/Table';
 import { Badge } from '@/shared/components/ui/Badge';
@@ -29,19 +29,19 @@ type PayrollSummaryResponse = {
       department?: string | null;
       hourlyRate?: number | null;
     };
+    payPeriodStart: string;
+    payPeriodEnd: string;
     hours: number;
     hoursDisplay: string;
-    overtimeHours: number;
-    rate: number;
     grossPay: number;
     deductions: number;
     netPay: number;
-    status: 'draft' | 'approved' | 'paid';
-    payPeriodStart: string;
-    payPeriodEnd: string;
+    status: string;
     processedAt?: string | null;
   }>;
 };
+
+type PayrollWorkerRow = PayrollSummaryResponse['workers'][number] & { id: string };
 
 type PayrollStub = {
   payrollId: string;
@@ -121,7 +121,12 @@ export function PayrollReport() {
     void load();
   }, [token, date, month, year]);
 
-  const columns: Column<PayrollSummaryResponse['workers'][number]>[] = [
+  const workerRows: PayrollWorkerRow[] = useMemo(
+    () => (summary?.workers ?? []).map((w) => ({ ...w, id: w.payrollId })),
+    [summary?.workers]
+  );
+
+  const columns: Column<PayrollWorkerRow>[] = [
     {
       key: 'worker',
       header: 'Worker',
@@ -198,8 +203,6 @@ export function PayrollReport() {
     },
   ];
 
-  const totalSales = summary?.summary.totalPay ?? 0;
-
   return (
     <div className="space-y-6">
       <Card className="p-0 overflow-hidden rounded-3xl border-gray-100 shadow-sm">
@@ -274,7 +277,7 @@ export function PayrollReport() {
           </div>
         </div>
 
-        <Table data={summary?.workers ?? []} columns={columns} className="border-none" />
+        <Table data={workerRows} columns={columns} className="border-none" />
       </Card>
 
       <Modal

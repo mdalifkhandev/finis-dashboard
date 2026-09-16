@@ -18,6 +18,7 @@ export interface SelectProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 
   className?: string;
   name?: string;
   disabled?: boolean;
+  required?: boolean;
 }
 
 const Select = forwardRef<HTMLDivElement, SelectProps>(({

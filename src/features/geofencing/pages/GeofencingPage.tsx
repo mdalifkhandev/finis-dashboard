@@ -766,7 +766,6 @@ export function GeofencingPage() {
                                                 strokeWeight: 3,
                                                 fillOpacity: 0.08,
                                                 fillColor: '#f97316',
-                                                strokeDasharray: '8 6' as any,
                                             }}
                                         />
                                     )}
