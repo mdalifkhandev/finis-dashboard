@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Mail, Phone, MapPin, Edit, ShieldCheck, Calendar as CalendarIcon, ChevronLeft } from 'lucide-react';
+import { Mail, Phone, MapPin, Edit, ShieldCheck, Calendar as CalendarIcon, ChevronLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Tabs } from '@/shared/components/ui/Tabs';
@@ -14,8 +14,9 @@ import {
   MessageWorkerModal,
   EditWorkerProfileModal
 } from '../components';
-import { mockWorkers } from '@/services/mock/mockData';
 import { formatDate } from '@/shared/utils';
+import { useAppSelector } from '@/store/hooks';
+import { apiClient } from '@/services';
 
 export function WorkerDetailPage() {
   const { id } = useParams();
@@ -24,7 +25,54 @@ export function WorkerDetailPage() {
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const worker = mockWorkers.find(w => w.id === id);
+  const workers = useAppSelector((state) => state.workforce.workers);
+  const [worker, setWorker] = useState<any>(() => workers.find(w => w.id === id || w.memberId === id) || null);
+  const [isLoading, setIsLoading] = useState(!worker);
+
+  useEffect(() => {
+    if (!id) return;
+    const fromStore = workers.find(w => w.id === id || w.memberId === id);
+    if (fromStore) {
+      setWorker({
+        ...fromStore,
+        name: fromStore.fullName,
+        role: fromStore.role || 'Worker',
+        avatar: fromStore.avatarUrl,
+        status: fromStore.status || 'active',
+      });
+      setIsLoading(false);
+      return;
+    }
+    void (async () => {
+      setIsLoading(true);
+      try {
+        const res = await apiClient.get<any>(`/super_admin/team/users/${id}`);
+        const data = res?.data || res;
+        if (data) {
+          setWorker({
+            ...data,
+            name: data.fullName || data.name || 'Worker',
+            role: data.role || 'Worker',
+            avatar: data.avatarUrl || data.avatar,
+            status: data.status || 'active',
+          });
+        }
+      } catch {
+        // Handled
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [id, workers]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#1D4F6D]" />
+        <p className="mt-3 text-sm text-gray-500">Loading worker profile...</p>
+      </div>
+    );
+  }
 
   if (!worker) {
     return (

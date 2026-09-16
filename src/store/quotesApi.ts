@@ -209,13 +209,16 @@ export const quotesApi = createApi({
       providesTags: ['QuoteLibrary'],
     }),
     getQuoteMeasurementTypes: builder.query<QuoteMeasurementType[], QuoteMeasurementFilters | void>({
-      query: (params = {}) => ({
-        url: API_ENDPOINTS.QUOTES.MEASUREMENT_TYPES,
-        params: {
-          ...(params.search ? { search: params.search } : {}),
-          ...(params.includeInactive ? { includeInactive: 'true' } : {}),
-        },
-      }),
+      query: (params) => {
+        const filters = params || {};
+        return {
+          url: API_ENDPOINTS.QUOTES.MEASUREMENT_TYPES,
+          params: {
+            ...(filters.search ? { search: filters.search } : {}),
+            ...(filters.includeInactive ? { includeInactive: 'true' } : {}),
+          },
+        };
+      },
       transformResponse: (response: ApiEnvelope<QuoteMeasurementType[]> | QuoteMeasurementType[]): QuoteMeasurementType[] => {
         if (response && typeof response === 'object' && 'data' in response) return response.data;
         return response as QuoteMeasurementType[];
@@ -246,13 +249,16 @@ export const quotesApi = createApi({
       invalidatesTags: ['QuoteLibrary'],
     }),
     getQuoteWorkCategories: builder.query<QuoteWorkCategory[], QuoteLibraryFilters | void>({
-      query: (params = {}) => ({
-        url: API_ENDPOINTS.QUOTES.WORK_CATEGORIES,
-        params: {
-          ...(params.search ? { search: params.search } : {}),
-          ...(params.includeInactive ? { includeInactive: 'true' } : {}),
-        },
-      }),
+      query: (params) => {
+        const filters = params || {};
+        return {
+          url: API_ENDPOINTS.QUOTES.WORK_CATEGORIES,
+          params: {
+            ...(filters.search ? { search: filters.search } : {}),
+            ...(filters.includeInactive ? { includeInactive: 'true' } : {}),
+          },
+        };
+      },
       transformResponse: (response: ApiEnvelope<QuoteWorkCategory[]> | QuoteWorkCategory[]): QuoteWorkCategory[] => {
         if (response && typeof response === 'object' && 'data' in response) return response.data;
         return response as QuoteWorkCategory[];
@@ -283,20 +289,35 @@ export const quotesApi = createApi({
       invalidatesTags: ['QuoteLibrary'],
     }),
     getQuoteWorkItems: builder.query<QuoteWorkItem[], QuoteLibraryFilters | void>({
-      query: (params = {}) => ({
-        url: API_ENDPOINTS.QUOTES.WORK_ITEMS,
-        params: {
-          ...(params.search ? { search: params.search } : {}),
-          ...(params.categoryId ? { categoryId: params.categoryId } : {}),
-          ...(params.projectType ? { projectType: params.projectType } : {}),
-          ...(params.propertyType ? { propertyType: params.propertyType } : {}),
-          ...(params.unitType ? { unitType: params.unitType } : {}),
-          ...(params.includeInactive ? { includeInactive: 'true' } : {}),
-        },
-      }),
-      transformResponse: (response: ApiEnvelope<QuoteWorkItem[]> | QuoteWorkItem[]): QuoteWorkItem[] => {
-        if (response && typeof response === 'object' && 'data' in response) return response.data;
-        return response as QuoteWorkItem[];
+      query: (params) => {
+        const filters = params || {};
+        return {
+          url: API_ENDPOINTS.QUOTES.WORK_ITEMS,
+          params: {
+            flat: 'true',
+            ...(filters.search ? { search: filters.search } : {}),
+            ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
+            ...(filters.projectType ? { projectType: filters.projectType } : {}),
+            ...(filters.propertyType ? { propertyType: filters.propertyType } : {}),
+            ...(filters.unitType ? { unitType: filters.unitType } : {}),
+            ...(filters.includeInactive ? { includeInactive: 'true' } : {}),
+          },
+        };
+      },
+      transformResponse: (response: any): QuoteWorkItem[] => {
+        const payload = response && typeof response === 'object' && 'data' in response ? response.data : response;
+        if (Array.isArray(payload)) {
+          if (payload.length > 0 && 'data' in payload[0] && Array.isArray(payload[0].data)) {
+            return payload.flatMap((group: any) =>
+              (group.data || []).map((item: any) => ({
+                ...item,
+                category: item.category || group.category,
+              }))
+            );
+          }
+          return payload as QuoteWorkItem[];
+        }
+        return [];
       },
       providesTags: ['QuoteLibrary'],
     }),
@@ -309,33 +330,46 @@ export const quotesApi = createApi({
       invalidatesTags: ['QuoteLibrary'],
     }),
     updateQuoteWorkItem: builder.mutation<QuoteWorkItem, { id: string; data: UpdateQuoteWorkItemPayload }>({
-      query: ({ id, data }) => ({
-        url: API_ENDPOINTS.QUOTES.WORK_ITEM(id),
-        method: 'PUT',
-        body: data,
-      }),
+      query: ({ id, data }) => {
+        if (!id || id === 'undefined') {
+          throw new Error('Valid work item ID is required for update');
+        }
+        return {
+          url: API_ENDPOINTS.QUOTES.WORK_ITEM(id),
+          method: 'PUT',
+          body: data,
+        };
+      },
       invalidatesTags: ['QuoteLibrary'],
     }),
     disableQuoteWorkItem: builder.mutation<{ success: boolean; message: string }, string>({
-      query: (id) => ({
-        url: API_ENDPOINTS.QUOTES.WORK_ITEM(id),
-        method: 'DELETE',
-      }),
+      query: (id) => {
+        if (!id || id === 'undefined') {
+          throw new Error('Valid work item ID is required to disable');
+        }
+        return {
+          url: API_ENDPOINTS.QUOTES.WORK_ITEM(id),
+          method: 'DELETE',
+        };
+      },
       invalidatesTags: ['QuoteLibrary'],
     }),
     getQuotes: builder.query<QuoteListResponse, QuoteFilters | void>({
-      query: (params = {}) => ({
-        url: API_ENDPOINTS.QUOTES.LIST,
-        params: {
-          ...(params.search ? { search: params.search } : {}),
-          ...(params.projectType ? { projectType: params.projectType } : {}),
-          ...(params.propertyType ? { propertyType: params.propertyType } : {}),
-          ...(params.unitType ? { unitType: params.unitType } : {}),
-          ...(params.workCategoryId ? { workCategoryId: params.workCategoryId } : {}),
-          ...(params.workItemId ? { workItemId: params.workItemId } : {}),
-          ...(params.includeInactive ? { includeInactive: 'true' } : {}),
-        },
-      }),
+      query: (params) => {
+        const filters = params || {};
+        return {
+          url: API_ENDPOINTS.QUOTES.LIST,
+          params: {
+            ...(filters.search ? { search: filters.search } : {}),
+            ...(filters.projectType ? { projectType: filters.projectType } : {}),
+            ...(filters.propertyType ? { propertyType: filters.propertyType } : {}),
+            ...(filters.unitType ? { unitType: filters.unitType } : {}),
+            ...(filters.workCategoryId ? { workCategoryId: filters.workCategoryId } : {}),
+            ...(filters.workItemId ? { workItemId: filters.workItemId } : {}),
+            ...(filters.includeInactive ? { includeInactive: 'true' } : {}),
+          },
+        };
+      },
       transformResponse: (response: ApiEnvelope<QuoteListResponse> | QuoteListResponse): QuoteListResponse => {
         if (response && typeof response === 'object' && 'data' in response) return response.data;
         return response as QuoteListResponse;

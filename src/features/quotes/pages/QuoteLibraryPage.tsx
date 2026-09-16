@@ -243,17 +243,21 @@ export function QuoteLibraryPage() {
   };
 
   const openEditItem = (item: QuoteWorkItem) => {
+    if (!item || !item.id) {
+      console.warn('Cannot edit work item: missing ID', item);
+      return;
+    }
     setEditingItem(item);
     setItemDraft({
-      categoryId: item.categoryId,
-      projectType: item.projectType,
-      propertyType: item.propertyType,
-      unitType: item.unitType,
-      name: item.name,
-      measurementType: item.measurementType,
+      categoryId: item.categoryId || item.category?.id || '',
+      projectType: item.projectType || '',
+      propertyType: item.propertyType || '',
+      unitType: item.unitType || '',
+      name: item.name || '',
+      measurementType: item.measurementType || '',
       unitCost: item.unitCost === null || item.unitCost === undefined ? '' : String(item.unitCost),
       sortOrder: String(item.sortOrder ?? 0),
-      isActive: item.isActive,
+      isActive: item.isActive ?? true,
     });
     setItemModalOpen(true);
   };
@@ -275,7 +279,7 @@ export function QuoteLibraryPage() {
 
     if (!payload.name) return;
 
-    if (editingCategory) {
+    if (editingCategory?.id) {
       await updateCategory({ id: editingCategory.id, data: payload }).unwrap();
     } else {
       await createCategory(payload).unwrap();
@@ -293,6 +297,10 @@ export function QuoteLibraryPage() {
   };
 
   const openEditMeasurement = (measurementType: QuoteMeasurementType) => {
+    if (!measurementType || !measurementType.id) {
+      console.warn('Cannot edit measurement type: missing ID', measurementType);
+      return;
+    }
     setEditingMeasurement(measurementType);
     setMeasurementDraft({
       value: measurementType.value,
@@ -314,7 +322,7 @@ export function QuoteLibraryPage() {
 
     if (!payload.value || !payload.label) return;
 
-    if (editingMeasurement) {
+    if (editingMeasurement?.id) {
       await updateMeasurementType({ id: editingMeasurement.id, data: payload }).unwrap();
     } else {
       await createMeasurementType(payload).unwrap();
@@ -326,6 +334,7 @@ export function QuoteLibraryPage() {
   };
 
   const handleDisableMeasurementType = async (measurementType: QuoteMeasurementType) => {
+    if (!measurementType?.id) return;
     if (!window.confirm(`Disable measurement type "${measurementType.label}"?`)) return;
     await disableMeasurementType(measurementType.id).unwrap();
   };
@@ -348,7 +357,7 @@ export function QuoteLibraryPage() {
       return;
     }
 
-    if (editingItem) {
+    if (editingItem?.id) {
       await updateItem({ id: editingItem.id, data: payload }).unwrap();
     } else {
       await createItem(payload).unwrap();
@@ -360,11 +369,13 @@ export function QuoteLibraryPage() {
   };
 
   const handleDisableCategory = async (category: QuoteWorkCategory) => {
+    if (!category?.id) return;
     if (!window.confirm(`Disable category "${category.name}"?`)) return;
     await disableCategory(category.id).unwrap();
   };
 
   const handleDisableItem = async (item: QuoteWorkItem) => {
+    if (!item?.id) return;
     if (!window.confirm(`Disable work item "${item.name}"?`)) return;
     await disableItem(item.id).unwrap();
   };

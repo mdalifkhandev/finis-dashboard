@@ -1,7 +1,6 @@
 import { Project } from '@/shared/types';
 import { Table, Column } from '@/shared/components/ui/Table';
 import { Badge } from '@/shared/components/ui/Badge';
-import { mockWorkers } from '@/services/mock/mockData';
 import { Building2, Calendar, DollarSign, CheckSquare } from 'lucide-react';
 
 interface ProjectReportViewProps {
@@ -28,7 +27,7 @@ export function ProjectReportView({ project }: ProjectReportViewProps) {
             id: task.id,
             location: 'Project Level',
             taskName: task.name,
-            worker: task.assignedTo?.map(id => mockWorkers.find(w => w.id === id)?.name).filter(Boolean).join(', ') || 'Unassigned',
+            worker: task.assignedTo?.join(', ') || 'Unassigned',
             value: task.internalValue ? `$${task.internalValue.toLocaleString()}` : '-',
             status: task.status,
             priority: (task as any).priority || 'medium'
@@ -43,7 +42,7 @@ export function ProjectReportView({ project }: ProjectReportViewProps) {
                 id: task.id,
                 location: floor.name,
                 taskName: task.name,
-                worker: task.assignedTo?.map(id => mockWorkers.find(w => w.id === id)?.name).filter(Boolean).join(', ') || 'Unassigned',
+                worker: task.assignedTo?.join(', ') || 'Unassigned',
                 value: task.internalValue ? `$${task.internalValue.toLocaleString()}` : '-',
                 status: task.status,
                 priority: (task as any).priority || 'medium'
@@ -57,7 +56,7 @@ export function ProjectReportView({ project }: ProjectReportViewProps) {
                     id: task.id,
                     location: `${floor.name} - ${room.name}`,
                     taskName: task.name,
-                    worker: task.assignedTo?.map(id => mockWorkers.find(w => w.id === id)?.name).filter(Boolean).join(', ') || 'Unassigned',
+                    worker: task.assignedTo?.join(', ') || 'Unassigned',
                     value: task.internalValue ? `$${task.internalValue.toLocaleString()}` : '-',
                     status: task.status,
                     priority: (task as any).priority || 'medium'

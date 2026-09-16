@@ -2,7 +2,6 @@ import { Card } from '@/shared/components/ui/Card';
 import { Table, Column } from '@/shared/components/ui/Table';
 import { Button } from '@/shared/components/ui/Button';
 import { Star, AlertCircle } from 'lucide-react';
-import { mockWorkers, mockAttendance, mockTasks } from '@/services/mock/mockData';
 
 interface PerformanceRecord {
     id: string;
@@ -15,34 +14,7 @@ interface PerformanceRecord {
 }
 
 export function PerformanceReport() {
-    // derive performance stats
-    const performanceData: PerformanceRecord[] = mockWorkers.map(worker => {
-        const workerAttendance = mockAttendance.filter(a => a.workerId === worker.id);
-        const totalDays = workerAttendance.length || 1;
-
-        const lateDays = workerAttendance.filter(a => a.status === 'late').length;
-        const attendanceRate = Math.round(((totalDays - lateDays) / totalDays) * 100);
-
-        const workerTasks = mockTasks.filter(t => t.assignedTo?.includes(worker.id));
-        const completed = workerTasks.filter(t => t.status === 'completed').length;
-        const pending = workerTasks.filter(t => t.status !== 'completed').length;
-
-        // Mock rating algo
-        let rating = 3.0;
-        if (attendanceRate > 90) rating += 1;
-        if (completed > 2) rating += 1;
-        if (lateDays > 0) rating -= 0.5;
-
-        return {
-            id: worker.id,
-            workerName: worker.name,
-            role: worker.role,
-            attendanceRate: attendanceRate,
-            tasksCompleted: completed,
-            tasksPending: pending,
-            rating: Math.min(5, Math.max(1, rating))
-        };
-    });
+    const performanceData: PerformanceRecord[] = [];
 
     const columns: Column<PerformanceRecord>[] = [
         {

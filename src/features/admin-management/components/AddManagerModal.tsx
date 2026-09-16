@@ -1,17 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Mail, Phone, User, Building2, Briefcase } from 'lucide-react';
 import { Modal } from '@/shared/components/ui/Modal';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { Select } from '@/shared/components/ui/Select';
-import { mockProjects, mockCompanies } from '@/services/mock/mockData';
+import { apiClient, API_ENDPOINTS } from '@/services';
 
 interface AddManagerModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
+interface OptionItem {
+    id: string;
+    name: string;
+}
+
 export function AddManagerModal({ isOpen, onClose }: AddManagerModalProps) {
+    const [companies, setCompanies] = useState<OptionItem[]>([]);
+    const [projects, setProjects] = useState<OptionItem[]>([]);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -20,10 +27,29 @@ export function AddManagerModal({ isOpen, onClose }: AddManagerModalProps) {
         projects: [] as string[]
     });
 
+    useEffect(() => {
+        if (!isOpen) return;
+        void (async () => {
+            try {
+                const resComp = await apiClient.get<any>(API_ENDPOINTS.COMPANIES.LIST);
+                const compList = Array.isArray(resComp?.data) ? resComp.data : (Array.isArray(resComp) ? resComp : []);
+                setCompanies(compList.map((c: any) => ({ id: c.id, name: c.name })));
+            } catch {
+                setCompanies([]);
+            }
+
+            try {
+                const resProj = await apiClient.get<any>(API_ENDPOINTS.PROJECTS.LIST);
+                const projList = Array.isArray(resProj?.data) ? resProj.data : (Array.isArray(resProj) ? resProj : []);
+                setProjects(projList.map((p: any) => ({ id: p.id, name: p.name })));
+            } catch {
+                setProjects([]);
+            }
+        })();
+    }, [isOpen]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Adding Manager:', formData);
-        // In a real app, this would call an API
         onClose();
     };
 
@@ -67,15 +93,17 @@ export function AddManagerModal({ isOpen, onClose }: AddManagerModalProps) {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Assigned Companies</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Assigned Company</label>
                         <Select
-                            placeholder="Select companies"
+                            placeholder="Select company"
                             value={formData.companies[0] || ''}
                             onChange={(e) => setFormData({ ...formData, companies: [e.target.value] })}
                             startIcon={<Building2 className="h-4 w-4" />}
-                            options={mockCompanies.map(c => ({ label: c.name, value: c.id }))}
+                            options={[
+                                { label: 'Select Company', value: '' },
+                                ...companies.map(c => ({ label: c.name, value: c.id }))
+                            ]}
                         />
-                        <p className="mt-1 text-[10px] text-gray-400 font-medium italic">* In this demo, you can select one primary company.</p>
                     </div>
 
                     <div>
@@ -85,7 +113,10 @@ export function AddManagerModal({ isOpen, onClose }: AddManagerModalProps) {
                             value={formData.projects[0] || ''}
                             onChange={(e) => setFormData({ ...formData, projects: [e.target.value] })}
                             startIcon={<Briefcase className="h-4 w-4" />}
-                            options={mockProjects.map(p => ({ label: p.name, value: p.id }))}
+                            options={[
+                                { label: 'Select Project', value: '' },
+                                ...projects.map(p => ({ label: p.name, value: p.id }))
+                            ]}
                         />
                     </div>
                 </div>

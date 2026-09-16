@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { CheckCircle, XCircle, DollarSign, FileText, Search, ExternalLink } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { CheckCircle, XCircle, DollarSign, FileText, Search, ExternalLink, Loader2 } from 'lucide-react';
 import { Card } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
@@ -9,20 +9,98 @@ import { Select } from '@/shared/components/ui/Select';
 import { Modal } from '@/shared/components/ui/Modal';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/Avatar';
-import { mockExpenses, mockProjects, mockTasks } from '@/services/mock/mockData';
-import { Expense } from '@/shared/types';
+import { apiClient, API_ENDPOINTS } from '@/services';
 import { getStatusColor } from '@/shared/utils';
 
+interface ExpenseItem {
+    id: string;
+    workerName: string;
+    description: string;
+    category: string;
+    subtotal: number;
+    tax: number;
+    totalAmount: number;
+    amount: number;
+    projectId?: string;
+    projectName?: string;
+    taskId?: string;
+    date: string;
+    status: 'pending' | 'approved' | 'rejected' | 'draft' | 'paid';
+    receiptUrl?: string;
+    rejectionReason?: string;
+}
+
+interface ProjectOption {
+    id: string;
+    name: string;
+}
+
+function normalizeStatus(rawStatus?: string): 'pending' | 'approved' | 'rejected' | 'draft' | 'paid' {
+    const s = (rawStatus || '').toUpperCase();
+    if (s === 'APPROVED') return 'approved';
+    if (s === 'REJECTED') return 'rejected';
+    if (s === 'PAID') return 'paid';
+    if (s === 'DRAFT') return 'draft';
+    return 'pending'; // SUBMITTED or PENDING
+}
+
 export function ExpensesPage() {
-    const [expenses, setExpenses] = useState<Expense[]>(mockExpenses);
-    const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+    const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
+    const [projects, setProjects] = useState<ProjectOption[]>([]);
+    const [selectedExpense, setSelectedExpense] = useState<ExpenseItem | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [isLoading, setIsLoading] = useState(false);
+    const [isActionLoading, setIsActionLoading] = useState(false);
 
     // Local state for modal editing
     const [editProjectId, setEditProjectId] = useState('');
-    const [editTaskId, setEditTaskId] = useState('');
+
+    const fetchExpenses = async () => {
+        setIsLoading(true);
+        try {
+            const res = await apiClient.get<any>(API_ENDPOINTS.EXPENSES.LIST);
+            const rawList = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+            const mapped: ExpenseItem[] = rawList.map((item: any) => ({
+                id: item.id,
+                workerName: item.createdBy?.fullName || item.workerName || 'Unknown Worker',
+                description: item.title || item.notes || item.description || 'Expense submission',
+                category: item.category || 'General',
+                subtotal: Number(item.subtotal ?? item.amount ?? 0),
+                tax: Number(item.tax ?? 0),
+                totalAmount: Number(item.totalAmount ?? item.amount ?? 0),
+                amount: Number(item.totalAmount ?? item.amount ?? 0),
+                projectId: item.projectId || item.project?.id || '',
+                projectName: item.project?.name || item.projectName || '',
+                taskId: item.taskId || '',
+                date: item.expenseDate || item.date || item.createdAt || new Date().toISOString(),
+                status: normalizeStatus(item.status),
+                receiptUrl: item.receiptUrl || '',
+                rejectionReason: item.rejectionNote || item.rejectionReason || '',
+            }));
+            setExpenses(mapped);
+        } catch {
+            setExpenses([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchProjects = async () => {
+        try {
+            const res = await apiClient.get<any>(API_ENDPOINTS.EXPENSES.PROJECTS);
+            const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+            setProjects(list.map((p: any) => ({ id: p.id, name: p.name })));
+        } catch {
+            setProjects([]);
+        }
+    };
+
+    useEffect(() => {
+        void fetchExpenses();
+        void fetchProjects();
+    }, []);
 
     const filteredExpenses = expenses.filter(expense => {
         const matchesSearch = expense.workerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -31,40 +109,41 @@ export function ExpensesPage() {
         return matchesSearch && matchesStatus;
     });
 
-    const handleApprove = () => {
+    const handleApprove = async () => {
         if (!selectedExpense) return;
-
-        const project = mockProjects.find(p => p.id === editProjectId);
-
-        setExpenses(expenses.map(e =>
-            e.id === selectedExpense.id ? {
-                ...e,
-                status: 'approved' as const,
-                projectId: editProjectId || e.projectId,
-                projectName: project?.name || e.projectName,
-                taskId: editTaskId || e.taskId
-            } : e
-        ));
-        setShowDetailModal(false);
+        setIsActionLoading(true);
+        try {
+            await apiClient.post(API_ENDPOINTS.EXPENSES.APPROVE(selectedExpense.id));
+            setExpenses(prev => prev.map(e => e.id === selectedExpense.id ? { ...e, status: 'approved' as const } : e));
+            setShowDetailModal(false);
+        } catch (err) {
+            console.error('Failed to approve expense:', err);
+        } finally {
+            setIsActionLoading(false);
+        }
     };
 
-    const handleReject = (reason: string) => {
+    const handleReject = async (reason: string) => {
         if (!selectedExpense) return;
-        setExpenses(expenses.map(e =>
-            e.id === selectedExpense.id ? { ...e, status: 'rejected' as const, rejectionReason: reason } : e
-        ));
-        setShowDetailModal(false);
+        setIsActionLoading(true);
+        try {
+            await apiClient.post(API_ENDPOINTS.EXPENSES.REJECT(selectedExpense.id), { comment: reason });
+            setExpenses(prev => prev.map(e => e.id === selectedExpense.id ? { ...e, status: 'rejected' as const, rejectionReason: reason } : e));
+            setShowDetailModal(false);
+        } catch (err) {
+            console.error('Failed to reject expense:', err);
+        } finally {
+            setIsActionLoading(false);
+        }
     };
 
-    const openDetailModal = (expense: Expense) => {
+    const openDetailModal = (expense: ExpenseItem) => {
         setSelectedExpense(expense);
         setEditProjectId(expense.projectId || '');
-        setEditTaskId(expense.taskId || '');
         setShowDetailModal(true);
     };
 
-
-    const pendingAmount = filteredExpenses.filter(e => e.status === 'pending').reduce((sum, e) => sum + (e.totalAmount ?? e.amount ?? 0), 0);
+    const pendingAmount = filteredExpenses.filter(e => e.status === 'pending').reduce((sum, e) => sum + (e.totalAmount || 0), 0);
 
     return (
         <div className="space-y-6">
@@ -73,9 +152,7 @@ export function ExpensesPage() {
                 title="Expense & Receipt Management"
                 description="Review and approve worker expense submissions"
                 icon={DollarSign}
-            >
-                <Button>Export Report</Button>
-            </PageHeader>
+            />
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -163,8 +240,9 @@ export function ExpensesPage() {
 
             {/* Expenses Table */}
             <Card>
-                <div className="p-6 border-b">
+                <div className="p-6 border-b flex items-center justify-between">
                     <h3 className="text-lg font-semibold">Expense Submissions</h3>
+                    {isLoading && <Loader2 className="w-5 h-5 animate-spin text-gray-400" />}
                 </div>
                 <Table
                     data={filteredExpenses}
@@ -234,7 +312,7 @@ export function ExpensesPage() {
                             render: (expense) => (
                                 <div className="flex items-center gap-2">
                                     <Button size="sm" variant="outline" onClick={() => openDetailModal(expense)}>
-                                        View & Edit
+                                        View Details
                                     </Button>
                                 </div>
                             )
@@ -252,19 +330,25 @@ export function ExpensesPage() {
                 >
                     <div className="space-y-6">
                         {/* Receipt Image */}
-                        <div className="bg-gray-100 rounded-lg overflow-hidden border border-gray-200 relative group">
-                            <img
-                                src={selectedExpense.receiptUrl}
-                                alt="Receipt"
-                                className="w-full h-64 object-contain"
-                            />
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <Button variant="secondary" onClick={() => window.open(selectedExpense.receiptUrl, '_blank')}>
-                                    <ExternalLink className="w-4 h-4 mr-2" />
-                                    Open Original
-                                </Button>
+                        {selectedExpense.receiptUrl ? (
+                            <div className="bg-gray-100 rounded-lg overflow-hidden border border-gray-200 relative group">
+                                <img
+                                    src={selectedExpense.receiptUrl}
+                                    alt="Receipt"
+                                    className="w-full h-64 object-contain"
+                                />
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <Button variant="secondary" onClick={() => window.open(selectedExpense.receiptUrl, '_blank')}>
+                                        <ExternalLink className="w-4 h-4 mr-2" />
+                                        Open Original
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="p-8 text-center bg-gray-50 rounded-lg border border-dashed text-gray-400 text-sm">
+                                No receipt attached
+                            </div>
+                        )}
 
                         {/* Details */}
                         <div className="grid grid-cols-2 gap-4">
@@ -302,32 +386,18 @@ export function ExpensesPage() {
                             </p>
                         </div>
 
-                        {/* Project & Task Assignment */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Project</label>
-                                <Select
-                                    value={editProjectId}
-                                    onChange={(e) => setEditProjectId(e.target.value)}
-                                    options={[
-                                        { value: '', label: 'Select Project...' },
-                                        ...(mockProjects || []).map(p => ({ value: p.id, label: p.name }))
-                                    ]}
-                                    disabled={selectedExpense.status !== 'pending'}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Linked Task</label>
-                                <Select
-                                    value={editTaskId}
-                                    onChange={(e) => setEditTaskId(e.target.value)}
-                                    options={[
-                                        { value: '', label: 'Select Task...' },
-                                        ...(mockTasks || []).map(t => ({ value: t.id, label: t.name }))
-                                    ]}
-                                    disabled={selectedExpense.status !== 'pending'}
-                                />
-                            </div>
+                        {/* Project Assignment */}
+                        <div className="pt-4 border-t">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+                            <Select
+                                value={editProjectId}
+                                onChange={(e) => setEditProjectId(e.target.value)}
+                                options={[
+                                    { value: '', label: 'Select Project...' },
+                                    ...projects.map(p => ({ value: p.id, label: p.name }))
+                                ]}
+                                disabled={selectedExpense.status !== 'pending'}
+                            />
                         </div>
 
                         {selectedExpense.status === 'rejected' && selectedExpense.rejectionReason && (
@@ -344,11 +414,19 @@ export function ExpensesPage() {
                             </Button>
                             {selectedExpense.status === 'pending' && (
                                 <>
-                                    <Button variant="destructive" onClick={() => handleReject('Not approved')}>
+                                    <Button
+                                        variant="destructive"
+                                        disabled={isActionLoading}
+                                        onClick={() => handleReject('Not approved')}
+                                    >
                                         <XCircle className="w-4 h-4 mr-2" />
                                         Reject
                                     </Button>
-                                    <Button onClick={handleApprove} className="bg-green-600 hover:bg-green-700">
+                                    <Button
+                                        disabled={isActionLoading}
+                                        onClick={handleApprove}
+                                        className="bg-green-600 hover:bg-green-700"
+                                    >
                                         <CheckCircle className="w-4 h-4 mr-2" />
                                         Approve
                                     </Button>

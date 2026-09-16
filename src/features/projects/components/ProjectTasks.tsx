@@ -7,7 +7,6 @@ import { Badge } from '@/shared/components/ui/Badge';
 import { Modal } from '@/shared/components/ui/Modal';
 import { Label } from '@/shared/components/ui/Label';
 import { Select } from '@/shared/components/ui/Select';
-import { MOCK_LIBRARY, MOCK_PROJECT_SCOPE } from '@/services/mock/mockData';
 
 // Local interface for Task Definition within a Project
 interface ProjectTaskDef {
@@ -23,8 +22,7 @@ interface ProjectTaskDef {
 }
 
 export function ProjectTasks() {
-    // Mock Data
-    const [tasks, setTasks] = useState<ProjectTaskDef[]>(MOCK_PROJECT_SCOPE as unknown as ProjectTaskDef[]);
+    const [tasks, setTasks] = useState<ProjectTaskDef[]>([]);
 
     // Modals State
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -41,14 +39,11 @@ export function ProjectTasks() {
         estimatedHours: 0
     });
 
-    const filteredLibrary = MOCK_LIBRARY.filter(task =>
-        task.name.toLowerCase().includes(librarySearch.toLowerCase()) ||
-        task.category.toLowerCase().includes(librarySearch.toLowerCase())
-    );
+    const filteredLibrary: any[] = [];
 
     // -- Task Definition Logic --
 
-    const handleImportFromLibrary = (libTask: typeof MOCK_LIBRARY[0]) => {
+    const handleImportFromLibrary = (libTask: any) => {
         setNewTask({
             originalLibraryId: libTask.id,
             name: libTask.name,

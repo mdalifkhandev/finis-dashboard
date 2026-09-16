@@ -3,7 +3,6 @@ import { Table, Column } from '@/shared/components/ui/Table';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Button } from '@/shared/components/ui/Button';
 import { Download } from 'lucide-react';
-import { mockProjects } from '@/services/mock/mockData';
 
 interface InvoiceRecord {
     id: string;
@@ -19,22 +18,7 @@ interface InvoiceRecord {
 }
 
 export function InvoiceReport() {
-    // Derive invoices from projects
-    const invoices: InvoiceRecord[] = mockProjects.map(project => {
-        const billed = project.budget * (project.progress / 100);
-        return {
-            id: `inv-${project.id}`,
-            projectId: project.id,
-            projectName: project.name,
-            clientName: project.companyName || 'Unknown Client',
-            totalBudget: project.budget,
-            completion: project.progress,
-            amountBilled: billed,
-            amountRemaining: project.budget - billed,
-            lastBilledDate: new Date().toISOString().split('T')[0], // Mock date
-            status: project.progress > 0 ? 'paid' : 'pending' // Mock status logic
-        };
-    });
+    const invoices: InvoiceRecord[] = [];
 
     const columns: Column<InvoiceRecord>[] = [
         {

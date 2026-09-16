@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Company } from '../lib/types';
-import { mockCompanies } from '../lib/mockData';
 
 interface CompanyContextType {
     companies: Company[];
@@ -12,7 +11,7 @@ interface CompanyContextType {
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 
 export function CompanyProvider({ children }: { children: ReactNode }) {
-    const [companies, setCompanies] = useState<Company[]>(mockCompanies);
+    const [companies, setCompanies] = useState<Company[]>([]);
 
     const addCompany = (company: Company) => {
         setCompanies(prev => [company, ...prev]);

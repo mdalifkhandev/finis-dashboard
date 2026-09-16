@@ -95,9 +95,11 @@ export const API_ENDPOINTS = {
     // TIME TRACKING
     TIME_TRACKING: {
         ATTENDANCE: '/time-tracking/attendance',
-        ADJUSTMENTS: '/time-tracking/adjustments',
-        APPROVE_ADJUSTMENT: (id: string) => `/time-tracking/adjustments/${id}/approve`,
-        REJECT_ADJUSTMENT: (id: string) => `/time-tracking/adjustments/${id}/reject`,
+        ADJUSTMENTS: '/time-adjustments/pending',
+        PENDING_ADJUSTMENTS: '/time-adjustments/pending',
+        UPDATE_ADJUSTMENT_STATUS: (id: string) => `/time-adjustments/${id}/status`,
+        APPROVE_ADJUSTMENT: (id: string) => `/time-adjustments/${id}/status`,
+        REJECT_ADJUSTMENT: (id: string) => `/time-adjustments/${id}/status`,
         SCHEDULES: '/time-tracking/schedules',
     },
 
@@ -112,10 +114,17 @@ export const API_ENDPOINTS = {
 
     // EXPENSES
     EXPENSES: {
-        LIST: '/expenses',
-        DETAIL: (id: string) => `/expenses/${id}`,
-        APPROVE: (id: string) => `/expenses/${id}/approve`,
-        REJECT: (id: string) => `/expenses/${id}/reject`,
+        LIST: '/admin/reimbursement-expenses',
+        SUMMARY: '/admin/reimbursement-expenses/summary',
+        OPTIONS: '/admin/reimbursement-expenses/options',
+        PROJECTS: '/admin/reimbursement-expenses/projects',
+        DETAIL: (id: string) => `/admin/reimbursement-expenses/${id}`,
+        CREATE: '/admin/reimbursement-expenses',
+        UPDATE: (id: string) => `/admin/reimbursement-expenses/${id}`,
+        DELETE: (id: string) => `/admin/reimbursement-expenses/${id}`,
+        APPROVE: (id: string) => `/admin/reimbursement-expenses/${id}/approve`,
+        REJECT: (id: string) => `/admin/reimbursement-expenses/${id}/reject`,
+        MARK_PAID: (id: string) => `/admin/reimbursement-expenses/${id}/mark-paid`,
     },
 
     // GEOFENCING
