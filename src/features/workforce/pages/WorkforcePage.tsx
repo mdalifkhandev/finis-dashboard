@@ -164,7 +164,7 @@ export function WorkforcePage() {
           className="gap-2 h-10 px-4 bg-[#1D4F6D] hover:bg-[#163a50] text-white shadow-lg transition-all hover:scale-[1.02] font-bold rounded-xl"
         >
           <Plus className="h-5 w-5" />
-          Add New Worker
+          Invite Worker
         </Button>
       </PageHeader>
 

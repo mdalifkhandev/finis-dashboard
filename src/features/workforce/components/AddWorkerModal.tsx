@@ -2,126 +2,146 @@ import { useState } from 'react';
 import { Modal } from '@/shared/components/ui/Modal';
 import { Input } from '@/shared/components/ui/Input';
 import { Button } from '@/shared/components/ui/Button';
-import { Select } from '@/shared/components/ui/Select';
-import { DatePicker } from '@/shared/components/ui/DatePicker';
-import { Upload } from 'lucide-react';
+import { Mail, Phone } from 'lucide-react';
+import { useSendInviteMutation } from '@/store/teamManagementApi';
+
 interface AddWorkerModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+    isOpen: boolean;
+    onClose: () => void;
 }
+
 export function AddWorkerModal({
-  isOpen,
-  onClose
+    isOpen,
+    onClose,
 }: AddWorkerModalProps) {
-  const [startDate, setStartDate] = useState<Date | undefined>();
+    const [inviteMethod, setInviteMethod] = useState<'email' | 'phone'>('email');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [errorMsg, setErrorMsg] = useState('');
+    const [successMsg, setSuccessMsg] = useState('');
 
-  return <Modal isOpen={isOpen} onClose={onClose} title="Add New Worker" className="max-w-2xl">
-    <div className="space-y-6">
-      <div className="flex items-center gap-6">
-        <div className="flex h-24 w-24 flex-col items-center justify-center rounded-full border-2 border-dashed border-gray-300 bg-gray-50 text-gray-400 hover:bg-gray-100 cursor-pointer transition-colors">
-          <Upload className="h-6 w-6 mb-1" />
-          <span className="text-xs">Upload Photo</span>
-        </div>
-        <div className="flex-1 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                First Name
-              </label>
-              <Input placeholder="John" />
+    const [sendInvite, { isLoading }] = useSendInviteMutation();
+
+    const handleInvite = async () => {
+        setErrorMsg('');
+        setSuccessMsg('');
+        try {
+            await sendInvite({
+                ...(inviteMethod === 'email' ? { email: email.trim() } : { phone: phone.trim() }),
+                role: 'worker',
+            }).unwrap();
+            setSuccessMsg('Worker invitation sent successfully!');
+            setTimeout(() => {
+                setEmail('');
+                setPhone('');
+                setErrorMsg('');
+                setSuccessMsg('');
+                onClose();
+            }, 800);
+        } catch (err: any) {
+            console.error('Invite worker failed:', err);
+            setErrorMsg(err?.data?.message || err?.message || 'Failed to send invitation. Please try again.');
+        }
+    };
+
+    const handleClose = () => {
+        setErrorMsg('');
+        setSuccessMsg('');
+        onClose();
+    };
+
+    const isDisabled =
+        isLoading || (inviteMethod === 'email' ? !email.trim() : !phone.trim());
+
+    return (
+        <Modal isOpen={isOpen} onClose={handleClose} title="Invite Worker">
+            <div className="space-y-4">
+                {/* Invite Method */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Invitation Method
+                    </label>
+                    <div className="flex gap-4">
+                        <Button
+                            variant={inviteMethod === 'email' ? 'default' : 'outline'}
+                            onClick={() => {
+                                setInviteMethod('email');
+                                setErrorMsg('');
+                            }}
+                            className="flex-1"
+                        >
+                            <Mail className="w-4 h-4 mr-2" />
+                            Email
+                        </Button>
+                        <Button
+                            variant={inviteMethod === 'phone' ? 'default' : 'outline'}
+                            onClick={() => {
+                                setInviteMethod('phone');
+                                setErrorMsg('');
+                            }}
+                            className="flex-1"
+                        >
+                            <Phone className="w-4 h-4 mr-2" />
+                            Phone
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Email or Phone */}
+                {inviteMethod === 'email' ? (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Worker Email Address
+                        </label>
+                        <Input
+                            type="email"
+                            placeholder="worker@example.com"
+                            value={email}
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                                if (errorMsg) setErrorMsg('');
+                            }}
+                        />
+                    </div>
+                ) : (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Worker Phone Number
+                        </label>
+                        <Input
+                            type="tel"
+                            placeholder="+1-XXX-XXX-XXXX"
+                            value={phone}
+                            onChange={(e) => {
+                                setPhone(e.target.value);
+                                if (errorMsg) setErrorMsg('');
+                            }}
+                        />
+                    </div>
+                )}
+
+                {errorMsg && (
+                    <div className="text-sm font-medium text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                        {errorMsg}
+                    </div>
+                )}
+
+                {successMsg && (
+                    <div className="text-sm font-medium text-green-600 bg-green-50 p-3 rounded-lg border border-green-200">
+                        {successMsg}
+                    </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex justify-end gap-3 mt-6">
+                    <Button variant="outline" onClick={handleClose} disabled={isLoading}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleInvite} disabled={isDisabled}>
+                        {isLoading ? 'Sending...' : 'Send Invitation'}
+                    </Button>
+                </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Last Name
-              </label>
-              <Input placeholder="Doe" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Role</label>
-          <Select placeholder="Select role" options={[{
-            label: 'Site Manager',
-            value: 'manager'
-          }, {
-            label: 'Engineer',
-            value: 'engineer'
-          }, {
-            label: 'Electrician',
-            value: 'electrician'
-          }, {
-            label: 'Carpenter',
-            value: 'carpenter'
-          }, {
-            label: 'Laborer',
-            value: 'laborer'
-          }]} />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            Department
-          </label>
-          <Select placeholder="Select department" options={[{
-            label: 'Construction',
-            value: 'construction'
-          }, {
-            label: 'Electrical',
-            value: 'electrical'
-          }, {
-            label: 'Plumbing',
-            value: 'plumbing'
-          }, {
-            label: 'Management',
-            value: 'management'
-          }]} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Email</label>
-          <Input type="email" placeholder="john.doe@company.com" />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Phone</label>
-          <Input placeholder="+1 (555) 000-0000" />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700">Address</label>
-        <Input placeholder="123 Street Name, City, State" />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            Start Date
-          </label>
-          <DatePicker
-            date={startDate}
-            setDate={setStartDate}
-            placeholder="Select start date"
-            className="h-11"
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            Hourly Rate
-          </label>
-          <Input type="number" placeholder="$0.00" />
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-3 pt-4">
-        <Button variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button onClick={onClose}>Add Worker</Button>
-      </div>
-    </div>
-  </Modal>;
+        </Modal>
+    );
 }
