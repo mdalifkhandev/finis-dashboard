@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Building2,
   Calendar,
@@ -7,6 +8,7 @@ import {
   FileText,
   Loader2,
   TrendingUp,
+  Receipt,
 } from 'lucide-react';
 import { apiClient, API_ENDPOINTS } from '@/services';
 import { config } from '@/config/env';
@@ -200,7 +202,7 @@ interface ExpenseReportData {
       name: string;
     } | null;
     date: string;
-    status: 'pending' | 'approved' | 'rejected';
+    status: string;
     receiptUrl?: string | null;
   }>;
 }
@@ -228,6 +230,7 @@ const REPORTS: ReportConfig[] = [
   { type: 'payroll', label: 'Payroll Reports', description: 'Worker pay, hours, and deductions', icon: CircleDollarSign },
   { type: 'project_invoices', label: 'Project Invoices', description: 'Budgets, spend, and progress', icon: Building2 },
   { type: 'worker_performance', label: 'Worker Performance', description: 'Attendance and task metrics', icon: TrendingUp },
+  { type: 'expense', label: 'Expense Reports', description: 'Reimbursements, categories, and receipts', icon: Receipt },
 ];
 
 const FREQUENCIES: Array<{ value: ReportFrequency; label: string }> = [
@@ -324,7 +327,21 @@ export function ReportsPage() {
   const authUser = useAppSelector(selectAuthUser);
   const role = authUser?.role === 'super_admin' ? 'super_admin' : 'admin';
 
-  const [reportType, setReportType] = useState<ReportType>('payroll');
+  const [searchParams] = useSearchParams();
+  const queryType = searchParams.get('type');
+  const [reportType, setReportType] = useState<ReportType>(() => {
+    if (queryType && ['payroll', 'project_invoices', 'worker_performance', 'expense'].includes(queryType)) {
+      return queryType as ReportType;
+    }
+    return 'payroll';
+  });
+
+  useEffect(() => {
+    if (queryType && ['payroll', 'project_invoices', 'worker_performance', 'expense'].includes(queryType)) {
+      setReportType(queryType as ReportType);
+      setReportData(null);
+    }
+  }, [queryType]);
   const [periodType, setPeriodType] = useState<ReportFrequency>('monthly');
   const [startDate, setStartDate] = useState<Date | undefined>(() => getAutoRange('monthly').start);
   const [endDate, setEndDate] = useState<Date | undefined>(() => getAutoRange('monthly').end);
@@ -714,6 +731,15 @@ export function ReportsPage() {
         ),
       },
       {
+        key: 'description',
+        header: 'Description',
+        render: (record) => (
+          <span className="text-sm font-medium text-gray-800 line-clamp-1" title={record.description}>
+            {record.description || 'Expense'}
+          </span>
+        ),
+      },
+      {
         key: 'project',
         header: 'Project',
         render: (record) => <span className="text-sm text-gray-700">{record.project?.name ?? 'N/A'}</span>,
@@ -726,17 +752,47 @@ export function ReportsPage() {
       {
         key: 'amount',
         header: 'Amount',
-        render: (record) => <span className="font-semibold">{formatMoney(record.amount)}</span>,
+        render: (record) => <span className="font-semibold text-gray-900">{formatMoney(record.amount)}</span>,
       },
       {
         key: 'status',
         header: 'Status',
-        render: (record) => <Badge variant="secondary">{record.status}</Badge>,
+        render: (record) => {
+          const s = (record.status || '').toLowerCase();
+          const colorClass = s === 'paid'
+            ? 'bg-emerald-100 text-emerald-800'
+            : s === 'approved'
+            ? 'bg-blue-100 text-blue-800'
+            : s === 'rejected'
+            ? 'bg-red-100 text-red-800'
+            : 'bg-amber-100 text-amber-800';
+          return (
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase tracking-wider ${colorClass}`}>
+              {record.status}
+            </span>
+          );
+        },
       },
       {
         key: 'date',
         header: 'Date',
         render: (record) => <span className="text-sm text-gray-700">{formatPeriodDate(record.date)}</span>,
+      },
+      {
+        key: 'receiptUrl',
+        header: 'Receipt',
+        render: (record) => record.receiptUrl ? (
+          <a
+            href={record.receiptUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center text-xs font-bold text-[#1D4F6D] hover:underline"
+          >
+            View Receipt
+          </a>
+        ) : (
+          <span className="text-xs text-gray-400">No Receipt</span>
+        ),
       },
     ];
 
@@ -775,7 +831,7 @@ export function ReportsPage() {
         </div>
       )}
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {REPORTS.map((report) => {
           const Icon = report.icon;
           const isSelected = reportType === report.type;
@@ -794,15 +850,15 @@ export function ReportsPage() {
                 setError(null);
               }}
             >
-              <div className="flex items-start gap-4">
-                <div className={`rounded-xl p-3 ${isSelected ? 'bg-[#1D4F6D]/10' : 'bg-gray-100'}`}>
+              <div className="flex items-start gap-3.5">
+                <div className={`rounded-xl p-2.5 shrink-0 ${isSelected ? 'bg-[#1D4F6D]/10' : 'bg-gray-100'}`}>
                   <Icon className={`h-5 w-5 ${isSelected ? 'text-[#1D4F6D]' : 'text-gray-600'}`} />
                 </div>
-                <div className="flex-1">
-                  <h3 className={`font-semibold ${isSelected ? 'text-[#1D4F6D]' : 'text-gray-900'}`}>
+                <div className="flex-1 min-w-0">
+                  <h3 className={`font-semibold text-sm sm:text-base leading-snug truncate ${isSelected ? 'text-[#1D4F6D]' : 'text-gray-900'}`}>
                     {report.label}
                   </h3>
-                  <p className={`mt-1 text-xs ${isSelected ? 'text-[#1D4F6D]/80' : 'text-gray-500'}`}>
+                  <p className={`mt-1 text-xs line-clamp-2 ${isSelected ? 'text-[#1D4F6D]/80' : 'text-gray-500'}`}>
                     {report.description}
                   </p>
                 </div>

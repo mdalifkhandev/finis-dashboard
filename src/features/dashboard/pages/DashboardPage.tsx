@@ -12,6 +12,7 @@ import {
   Download,
   TrendingUp,
   FileText,
+  Receipt,
 } from 'lucide-react';
 import {
   KPICard,
@@ -164,6 +165,7 @@ export function SuperAdminDashboard() {
     { type: 'payroll', label: 'Payroll', icon: FileText, hint: 'Worker payslips and deductions' },
     { type: 'project_invoices', label: 'Project Invoices', icon: ClipboardList, hint: 'Budgets, spending, and progress' },
     { type: 'worker_performance', label: 'Worker Performance', icon: TrendingUp, hint: 'Attendance and task metrics' },
+    { type: 'expense', label: 'Expenses', icon: Receipt, hint: 'Reimbursements and receipts' },
   ];
 
   return (
@@ -361,26 +363,26 @@ export function SuperAdminDashboard() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-3">
+            <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {reportShortcuts.map((report) => {
                 const Icon = report.icon;
                 return (
                   <button
                     key={report.type}
                     type="button"
-                    onClick={() => navigate('/reports')}
+                    onClick={() => navigate(`/reports?type=${report.type}`)}
                     className="group rounded-2xl border border-gray-100 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#1D4F6D]/20 hover:shadow-md"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="rounded-2xl bg-slate-50 p-3 transition-colors group-hover:bg-[#1D4F6D]/10">
                         <Icon className="h-5 w-5 text-[#1D4F6D]" />
                       </div>
-                      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
+                      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400 group-hover:text-[#1D4F6D]">
                         View
                       </span>
                     </div>
                     <div className="mt-4">
-                      <h3 className="text-sm font-bold text-gray-900">{report.label}</h3>
+                      <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#1D4F6D] transition-colors">{report.label}</h3>
                       <p className="mt-1 text-xs leading-5 text-gray-500">{report.hint}</p>
                     </div>
                   </button>

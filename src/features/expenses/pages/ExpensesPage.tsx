@@ -61,7 +61,9 @@ export function ExpensesPage() {
         setIsLoading(true);
         try {
             const res = await apiClient.get<any>(API_ENDPOINTS.EXPENSES.LIST);
-            const rawList = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+            const rawList = Array.isArray(res?.data?.data)
+                ? res.data.data
+                : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
             const mapped: ExpenseItem[] = rawList.map((item: any) => ({
                 id: item.id,
                 workerName: item.createdBy?.fullName || item.workerName || 'Unknown Worker',
@@ -90,7 +92,9 @@ export function ExpensesPage() {
     const fetchProjects = async () => {
         try {
             const res = await apiClient.get<any>(API_ENDPOINTS.EXPENSES.PROJECTS);
-            const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+            const list = Array.isArray(res?.data?.data)
+                ? res.data.data
+                : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
             setProjects(list.map((p: any) => ({ id: p.id, name: p.name })));
         } catch {
             setProjects([]);
