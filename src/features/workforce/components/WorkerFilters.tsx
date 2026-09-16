@@ -64,6 +64,7 @@ export function WorkerFilters({
             options={[
               { label: 'All Status', value: 'all' },
               { label: 'Active', value: 'active' },
+              { label: 'Pending', value: 'pending' },
               { label: 'On Leave', value: 'leave' },
               { label: 'Inactive', value: 'inactive' }
             ]}

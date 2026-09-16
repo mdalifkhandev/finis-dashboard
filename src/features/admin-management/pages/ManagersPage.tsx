@@ -13,11 +13,13 @@ import { getStatusColor } from '@/shared/utils';
 import {
     useGetManagerStatsQuery,
     useGetManagerListQuery,
+    useGetPendingInvitationsQuery,
     useSendInviteMutation,
     useResendInvitationMutation,
     useCancelInvitationMutation,
     useUpdateUserStatusMutation,
     ManagerUser,
+    PendingInvitation,
 } from '@/store/teamManagementApi';
 
 export function ManagersPage() {
@@ -28,13 +30,34 @@ export function ManagersPage() {
     // ── API Queries ──────────────────────────────────────────────────────
     const { data: stats, isLoading: statsLoading } = useGetManagerStatsQuery();
 
+    const { data: pendingInvitations = [], isLoading: invitationsLoading } =
+        useGetPendingInvitationsQuery({ role: 'manager' });
+
     const { data: managers = [], isLoading: managersLoading } = useGetManagerListQuery({
         search: searchQuery || undefined,
         status: statusFilter !== 'all' ? statusFilter : undefined,
     });
 
     // ── Mutations ────────────────────────────────────────────────────────
+    const [resendInvitation, { isLoading: resending }] = useResendInvitationMutation();
+    const [cancelInvitation, { isLoading: cancelling }] = useCancelInvitationMutation();
     const [updateUserStatus] = useUpdateUserStatusMutation();
+
+    const handleResend = async (id: string) => {
+        try {
+            await resendInvitation(id).unwrap();
+        } catch (err) {
+            console.error('Resend failed:', err);
+        }
+    };
+
+    const handleCancel = async (id: string) => {
+        try {
+            await cancelInvitation(id).unwrap();
+        } catch (err) {
+            console.error('Cancel failed:', err);
+        }
+    };
 
     const handleDisable = async (userId: string, currentStatus: string) => {
         const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
@@ -82,6 +105,55 @@ export function ManagersPage() {
             </div>
 
             {/* Pending Invitations */}
+            {!invitationsLoading && pendingInvitations.length > 0 && (
+                <Card className="p-6">
+                    <h3 className="text-lg font-semibold mb-4">Pending Invitations</h3>
+                    <div className="space-y-3">
+                        {pendingInvitations.map((invitation: PendingInvitation) => (
+                            <div
+                                key={invitation.id}
+                                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                            >
+                                <div className="flex items-center gap-4">
+                                    {invitation.email ? (
+                                        <div className="flex items-center gap-2">
+                                            <Mail className="w-4 h-4 text-gray-400" />
+                                            <span className="font-medium">{invitation.email}</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <Phone className="w-4 h-4 text-gray-400" />
+                                            <span className="font-medium">{invitation.phone}</span>
+                                        </div>
+                                    )}
+                                    <Badge variant="secondary">{invitation.role}</Badge>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-600">
+                                        Expires {new Date(invitation.expiresAt).toLocaleDateString()}
+                                    </span>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={resending}
+                                        onClick={() => handleResend(invitation.id)}
+                                    >
+                                        Resend
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={cancelling}
+                                        onClick={() => handleCancel(invitation.id)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            )}
 
             {/* Filters */}
             <Card className="p-6">

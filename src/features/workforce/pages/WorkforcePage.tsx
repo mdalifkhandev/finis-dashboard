@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users, Briefcase, ExternalLink } from 'lucide-react';
+import { Plus, Users, Briefcase, ExternalLink, Mail, Phone, Clock } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import { Card } from '@/shared/components/ui/Card';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
@@ -17,7 +17,13 @@ import { DateRangeFilter } from '@/features/dashboard/components/DateRangeFilter
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { selectAuthUser } from '@/store/authSlice';
 import { useGetCompaniesQuery, useLazyGetCompanyProjectsQuery } from '@/store/companiesApi';
-import { useGetAdminProjectsQuery, useGetProjectManagersQuery, useGetProjectWorkersQuery } from '@/store/projectApi';
+import { useGetAdminProjectsQuery, useGetProjectManagersQuery, useGetProjectWorkersQuery, ProjectTeamMember } from '@/store/projectApi';
+import {
+  useGetPendingInvitationsQuery,
+  useResendInvitationMutation,
+  useCancelInvitationMutation,
+  PendingInvitation,
+} from '@/store/teamManagementApi';
 import { setManagers, setSelectedProjectId, setWorkers } from '../store/workforceSlice';
 import { startWorkforceSocket, stopWorkforceSocket } from '../services/socket';
 import { store } from '@/store/store';
@@ -34,6 +40,27 @@ export function WorkforcePage() {
   const [projectFilter, setProjectFilter] = useState('all');
   const [timeFilter, setTimeFilter] = useState('yearly');
   const [customDateRange, setCustomDateRange] = useState<{ start: Date; end: Date } | null>(null);
+
+  const { data: pendingInvitations = [], isLoading: invitationsLoading } =
+    useGetPendingInvitationsQuery({ role: 'worker' });
+  const [resendInvitation, { isLoading: resending }] = useResendInvitationMutation();
+  const [cancelInvitation, { isLoading: cancelling }] = useCancelInvitationMutation();
+
+  const handleResend = async (id: string) => {
+    try {
+      await resendInvitation(id).unwrap();
+    } catch (err) {
+      console.error('Resend failed:', err);
+    }
+  };
+
+  const handleCancel = async (id: string) => {
+    try {
+      await cancelInvitation(id).unwrap();
+    } catch (err) {
+      console.error('Cancel failed:', err);
+    }
+  };
   const selectedProjectId = useAppSelector((state) => state.workforce.selectedProjectId);
   const authUser = useAppSelector(selectAuthUser);
   const managers = useAppSelector((state) => state.workforce.managers);
@@ -115,8 +142,28 @@ export function WorkforcePage() {
     };
   }, [selectedProjectId]);
 
+  const combinedWorkers = useMemo(() => {
+    const pendingWorkerItems: ProjectTeamMember[] = pendingInvitations.map((inv: PendingInvitation) => ({
+      memberId: inv.id,
+      id: inv.id,
+      fullName: inv.email ? inv.email.split('@')[0] : (inv.phone || 'Invited Worker'),
+      email: inv.email || '',
+      phone: inv.phone || null,
+      avatarUrl: null,
+      role: 'worker',
+      status: 'pending',
+      department: null,
+      managerId: null,
+    }));
+
+    const existingEmails = new Set(workers.map((w: ProjectTeamMember) => (w.email || '').toLowerCase()));
+    const newPending = pendingWorkerItems.filter((p) => !p.email || !existingEmails.has(p.email.toLowerCase()));
+
+    return [...workers, ...newPending];
+  }, [workers, pendingInvitations]);
+
   const filteredWorkers = useMemo(() => {
-    return workers.filter(worker => {
+    return combinedWorkers.filter(worker => {
       const workerName = worker.fullName || '';
       const workerEmail = worker.email || '';
       const workerRole = worker.role || '';
@@ -126,15 +173,15 @@ export function WorkforcePage() {
         workerEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
         workerRole.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesRole = roleFilter === 'all' || workerRole === roleFilter;
-      const matchesStatus = statusFilter === 'all' || workerStatus === statusFilter;
+      const matchesRole = roleFilter === 'all' || workerRole.toLowerCase() === roleFilter.toLowerCase();
+      const matchesStatus = statusFilter === 'all' || workerStatus.toLowerCase() === statusFilter.toLowerCase();
       const matchesProject = true;
 
       const matchesTime = true;
 
       return matchesSearch && matchesRole && matchesStatus && matchesProject && matchesTime;
     });
-  }, [workers, searchQuery, roleFilter, statusFilter, projectFilter, timeFilter, customDateRange]);
+  }, [combinedWorkers, searchQuery, roleFilter, statusFilter, projectFilter, timeFilter, customDateRange]);
 
   const liveInsideWorkers = Object.values(liveWorkers).filter((worker) => worker.isInsideZone);
   const livePausedWorkers = Object.values(liveWorkers).filter((worker) => !worker.isInsideZone && worker.status !== 'offline');
@@ -170,11 +217,70 @@ export function WorkforcePage() {
 
       {/* Stats */}
       <WorkerStats
-        total={workers.length}
+        total={workers.length + pendingInvitations.length}
         activeToday={liveInsideWorkers.length}
         onLeave={Math.max(workers.length - Object.values(liveWorkers).length, 0)}
         avgAttendance={workers.length ? `${Math.round((liveInsideWorkers.length / workers.length) * 100)}%` : '0%'}
       />
+
+      {/* Pending Invitations */}
+      {!invitationsLoading && pendingInvitations.length > 0 && (
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-amber-500" />
+              <h3 className="text-lg font-semibold text-gray-900">Pending Worker Invitations</h3>
+            </div>
+            <Badge variant="secondary" className="font-bold">
+              {pendingInvitations.length} Pending
+            </Badge>
+          </div>
+          <div className="space-y-3">
+            {pendingInvitations.map((invitation: PendingInvitation) => (
+              <div
+                key={invitation.id}
+                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+              >
+                <div className="flex items-center gap-4">
+                  {invitation.email ? (
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-gray-400" />
+                      <span className="font-medium text-gray-900">{invitation.email}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      <span className="font-medium text-gray-900">{invitation.phone}</span>
+                    </div>
+                  )}
+                  <Badge variant="secondary">{invitation.role}</Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">
+                    Expires {new Date(invitation.expiresAt).toLocaleDateString()}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={resending}
+                    onClick={() => handleResend(invitation.id)}
+                  >
+                    Resend
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={cancelling}
+                    onClick={() => handleCancel(invitation.id)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Filters */}
       <WorkerFilters

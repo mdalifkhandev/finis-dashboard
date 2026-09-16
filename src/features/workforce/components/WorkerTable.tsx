@@ -15,10 +15,13 @@ export function WorkerTable({ data }: WorkerTableProps) {
 
   const getStatusMeta = (status?: string, isInsideZone?: boolean) => {
     const normalized = (status || '').toLowerCase();
-    if (normalized === 'inside' || isInsideZone) {
-      return { label: 'Inside', variant: 'success' as const, dot: 'bg-green-500' };
+    if (normalized === 'pending') {
+      return { label: 'Pending', variant: 'secondary' as const, dot: 'bg-amber-500', badgeClass: 'bg-amber-100 text-amber-800 border-amber-200' };
     }
-    return { label: 'Outside', variant: 'destructive' as const, dot: 'bg-red-500' };
+    if (normalized === 'inside' || isInsideZone) {
+      return { label: 'Inside', variant: 'success' as const, dot: 'bg-green-500', badgeClass: '' };
+    }
+    return { label: 'Outside', variant: 'destructive' as const, dot: 'bg-red-500', badgeClass: '' };
   };
 
   const columns: Column<any>[] = [
@@ -67,7 +70,7 @@ export function WorkerTable({ data }: WorkerTableProps) {
         render: (row) => {
         const meta = getStatusMeta(row.status, row.isInsideZone);
         return (
-          <Badge variant={meta.variant} className="font-black text-[10px] uppercase tracking-widest px-2.5 py-0.5">
+          <Badge variant={meta.variant} className={`font-black text-[10px] uppercase tracking-widest px-2.5 py-0.5 ${meta.badgeClass}`}>
             {meta.label}
           </Badge>
         );
