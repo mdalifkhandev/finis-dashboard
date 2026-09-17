@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/Avat
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { clearAuth, selectAuthUser } from '@/store/authSlice';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { config } from '@/config/env';
 
 const menuItems = [
@@ -71,6 +71,36 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const authUser = useAppSelector(selectAuthUser);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  const isSuperAdmin = authUser?.role === 'super_admin';
+
+  const filteredMenuItems = useMemo(() => {
+    return menuItems.map(section => {
+      const items = section.items
+        .filter(item => {
+          if (!isSuperAdmin && (item.path === '/tenants' || item.path === '/admins')) {
+            return false;
+          }
+          return true;
+        })
+        .map(item => {
+          if (!isSuperAdmin && item.path === '/subscription-plans') {
+            return { ...item, label: 'My Subscription' };
+          }
+          return item;
+        });
+
+      const sectionTitle = (!isSuperAdmin && section.section === 'SAAS MANAGEMENT')
+        ? 'SUBSCRIPTION'
+        : section.section;
+
+      return {
+        ...section,
+        section: sectionTitle,
+        items,
+      };
+    }).filter(section => section.items.length > 0);
+  }, [isSuperAdmin]);
+
   const resolveAvatarUrl = (value?: string | null) => {
     if (!value) return '';
     if (value.startsWith('http://') || value.startsWith('https://')) return value;
@@ -98,12 +128,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     isOpen ? "translate-x-0" : "-translate-x-full invisible lg:visible"
   )}>
     {/* Logo & Close Button (Mobile) */}
-    <div className="flex h-24 items-center justify-between px-6 py-4 border-b border-gray-50">
-      <img
-        src="/finis 1.svg"
-        alt="Finis"
-        className="h-16 w-auto min-w-[140px] max-w-[200px] object-contain transition-transform hover:scale-105 duration-300"
-      />
+    <div className="flex h-16 items-center justify-between px-6 border-b border-gray-100">
+      <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D4F6D] to-[#163f57] text-white shadow-md shadow-blue-900/10">
+          <HardHat className="h-6 w-6" />
+        </div>
+        <div>
+          <span className="text-xl font-black tracking-tight text-gray-900">FINIS</span>
+          <span className="ml-1 text-[10px] font-bold tracking-widest text-[#1D4F6D] uppercase">PRO</span>
+        </div>
+      </div>
       <button
         onClick={onClose}
         className="lg:hidden p-2 rounded-lg text-gray-400 hover:bg-gray-50"
@@ -114,7 +148,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
     {/* Navigation */}
     <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8">
-      {menuItems.map(section => <div key={section.section}>
+      {filteredMenuItems.map(section => <div key={section.section}>
         <h3 className="mb-4 px-4 text-xs font-semibold uppercase tracking-wider text-gray-400">
           {section.section}
         </h3>

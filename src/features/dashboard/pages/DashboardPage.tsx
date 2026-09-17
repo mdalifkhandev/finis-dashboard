@@ -8,11 +8,7 @@ import {
   CreditCard,
   Clock3,
   Activity,
-  Calendar,
-  Download,
-  TrendingUp,
-  FileText,
-  Receipt,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   KPICard,
@@ -20,7 +16,8 @@ import {
   ProjectProgressChart,
   ActivityFeed,
   DashboardHeader,
-  SegmentedIndicator
+  SegmentedIndicator,
+  AdminDashboard,
 } from '../components';
 import { useDashboardStats } from '../hooks/useDashboardStats';
 import { SEO } from '@/shared/components/seo/SEO';
@@ -31,8 +28,8 @@ import { Badge } from '@/shared/components/ui/Badge';
 import { ROUTES } from '@/config/routes';
 import type { DashboardFilter } from '@/shared/types';
 import { cn } from '@/shared/utils';
-import { useAppDispatch } from '@/store/hooks';
-import { clearAuth } from '@/store/authSlice';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { clearAuth, selectAuthUser } from '@/store/authSlice';
 
 function DashboardSkeleton() {
   return (
@@ -161,12 +158,6 @@ export function SuperAdminDashboard() {
   const workforceStatus = dashboard?.workforceStatus ?? [];
   const subscriptionStats = dashboard?.subscriptionOverview;
   const subscriptionCards = subscriptionStats?.cards;
-  const reportShortcuts = [
-    { type: 'payroll', label: 'Payroll', icon: FileText, hint: 'Worker payslips and deductions' },
-    { type: 'project_invoices', label: 'Project Invoices', icon: ClipboardList, hint: 'Budgets, spending, and progress' },
-    { type: 'worker_performance', label: 'Worker Performance', icon: TrendingUp, hint: 'Attendance and task metrics' },
-    { type: 'expense', label: 'Expenses', icon: Receipt, hint: 'Reimbursements and receipts' },
-  ];
 
   return (
     <div className="space-y-8 pb-12">
@@ -215,8 +206,14 @@ export function SuperAdminDashboard() {
                 key={card.title}
                 title={card.title}
                 value={card.value}
+                icon={
+                  card.title === 'Active Tasks'
+                    ? ClipboardList
+                    : card.title === 'Completed Tasks'
+                    ? CheckCircle2
+                    : ShieldCheck
+                }
                 trend={card.trend}
-                icon={card.title === 'Active Tasks' ? ClipboardList : CheckCircle2}
                 color={card.color}
                 bgGradient={card.bgGradient}
                 isCurrency={card.isCurrency}
@@ -338,58 +335,6 @@ export function SuperAdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-3xl border-gray-100 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-4">
-              <CardTitle className="text-lg font-bold text-gray-900 tracking-tight">
-                Reports & Analytics
-              </CardTitle>
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/reports')}
-                  className="border-gray-200 text-gray-700 hover:bg-gray-50"
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Schedule
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => navigate('/reports')}
-                  className="bg-[#1D4F6D] hover:bg-[#163f57]"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Open Reports
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {reportShortcuts.map((report) => {
-                const Icon = report.icon;
-                return (
-                  <button
-                    key={report.type}
-                    type="button"
-                    onClick={() => navigate(`/reports?type=${report.type}`)}
-                    className="group rounded-2xl border border-gray-100 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#1D4F6D]/20 hover:shadow-md"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="rounded-2xl bg-slate-50 p-3 transition-colors group-hover:bg-[#1D4F6D]/10">
-                        <Icon className="h-5 w-5 text-[#1D4F6D]" />
-                      </div>
-                      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400 group-hover:text-[#1D4F6D]">
-                        View
-                      </span>
-                    </div>
-                    <div className="mt-4">
-                      <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#1D4F6D] transition-colors">{report.label}</h3>
-                      <p className="mt-1 text-xs leading-5 text-gray-500">{report.hint}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </CardContent>
-          </Card>
 
           {/* Fourth Row - Activity Feed */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -452,4 +397,15 @@ export function SuperAdminDashboard() {
 
     </div>
   );
+}
+
+export function DashboardPage() {
+  const authUser = useAppSelector(selectAuthUser);
+  const isSuperAdmin = authUser?.role === 'super_admin';
+
+  if (!isSuperAdmin) {
+    return <AdminDashboard />;
+  }
+
+  return <SuperAdminDashboard />;
 }

@@ -28,6 +28,10 @@ export interface DashboardStatsResponse {
             value: number;
             change: number;
         };
+        totalAdmins?: {
+            value: number;
+            change: number;
+        };
     };
     indicators: {
         attendanceRate: {

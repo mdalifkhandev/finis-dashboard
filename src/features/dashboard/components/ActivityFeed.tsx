@@ -42,15 +42,15 @@ export function ActivityFeed({ activities = [] }: ActivityFeedProps) {
                                     <div className="absolute left-5 top-10 h-full w-px bg-gray-100" />
                                 )}
                                 <Avatar className="h-10 w-10 border border-gray-100">
-                                    <AvatarImage src={activity.actor.avatarUrl ?? undefined} />
+                                    <AvatarImage src={activity.actor?.avatarUrl ?? undefined} />
                                     <AvatarFallback>
-                                        {activity.actor.fullName.charAt(0)}
+                                        {activity.actor?.fullName?.charAt(0) ?? 'U'}
                                     </AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-start justify-between gap-3">
                                         <p className="text-sm font-medium text-gray-900 leading-5">
-                                            {activity.actor.fullName}{' '}
+                                            {activity.actor?.fullName ?? 'User'}{' '}
                                             <span className="font-normal text-gray-500">
                                                 {activity.description}
                                             </span>

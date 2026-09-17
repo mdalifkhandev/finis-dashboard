@@ -108,6 +108,20 @@ export const dashboardApi = createApi({
             },
             providesTags: ['Dashboard'],
         }),
+        getAdminDashboard: builder.query<AdminDashboardData, void>({
+            query: () => ({
+                url: '/admin/dashboard',
+            }),
+            transformResponse: (
+                response: ApiEnvelope<AdminDashboardData> | AdminDashboardData,
+            ): AdminDashboardData => {
+                if ('success' in response && 'data' in response) {
+                    return response.data;
+                }
+                return response as AdminDashboardData;
+            },
+            providesTags: ['Dashboard'],
+        }),
         getAttendanceSummary: builder.query<SuperAdminAttendanceResponse, { date?: string; page?: number; limit?: number } | void>({
             query: (queryArgs = {}) => ({
                 url: API_ENDPOINTS.SUPER_ADMIN.DASHBOARD_ATTENDANCE_SUMMARY,
@@ -145,10 +159,58 @@ export const dashboardApi = createApi({
     }),
 });
 
+export interface SubscriptionUsageItem {
+    used: number;
+    max: number | null;
+}
+
+export interface AdminSubscriptionUsage {
+    planName: string;
+    status: string;
+    currentPeriodEnd: string | null;
+    isExpired: boolean;
+    companies: SubscriptionUsageItem;
+    projects: SubscriptionUsageItem;
+    workers: SubscriptionUsageItem;
+}
+
+export interface AdminDashboardData {
+    stats: {
+        activeProjects: number;
+        workersOnSite: number;
+        payrollPending: number;
+        inventoryAlerts: number;
+    };
+    kpis: {
+        companies: string;
+        activeProjects: string;
+        workforce: string;
+        totalBudget: number;
+        payrollCost: number;
+        totalExpenses: number;
+    };
+    subscriptionUsage: AdminSubscriptionUsage;
+    taskCards: Array<{
+        title: string;
+        value: string;
+        trend: number;
+        color: 'blue' | 'green' | 'amber';
+        bgGradient: string;
+        isCount?: boolean;
+        isCurrency?: boolean;
+    }>;
+    taskIndicators: DashboardStatsResponse['taskIndicators'];
+    projectCompletionForecast: DashboardStatsResponse['projectCompletionForecast'];
+    recentActivity: DashboardActivityItem[];
+    workforceStatus: DashboardWorkforceItem[];
+}
+
 export const {
     useGetDashboardOverviewQuery,
+    useGetAdminDashboardQuery,
     useGetRecentActivityQuery,
     useGetWorkforceStatusQuery,
     useGetAttendanceSummaryQuery,
     useGetAttendanceRecordsQuery,
 } = dashboardApi;
+

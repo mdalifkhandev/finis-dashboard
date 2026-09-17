@@ -6,3 +6,4 @@ export * from './ProjectProgressChart';
 export * from './QuickActions';
 export * from './SegmentedIndicator';
 export * from './StatCard';
+export * from './AdminDashboard';

@@ -8,7 +8,7 @@ import { NotFoundPage } from '@/features/dashboard/pages/NotFoundPage';
 import { useAppSelector } from '@/store/hooks';
 import { selectAuthToken } from '@/store/authSlice';
 
-const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPage').then((m) => ({ default: m.SuperAdminDashboard })));
+const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const ProjectsPage = lazy(() => import('@/features/projects/pages/ProjectsPage').then((m) => ({ default: m.ProjectsPage })));
 const ProjectDetailPage = lazy(() => import('@/features/projects/pages/ProjectDetailPage').then((m) => ({ default: m.ProjectDetailPage })));
 const CompaniesPage = lazy(() => import('@/features/companies/pages/CompaniesPage').then((m) => ({ default: m.CompaniesPage })));

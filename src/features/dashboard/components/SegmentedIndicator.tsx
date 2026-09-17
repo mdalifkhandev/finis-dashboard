@@ -5,39 +5,50 @@ import { cn } from '@/shared/utils';
 interface SegmentedIndicatorProps {
     activeFilter: string;
     taskIndicators?: {
-        totalTasks: number;
-        activeTasks: { value: number; change: number };
-        completed: { value: number; change: number };
-        efficiency: number;
-        teamSize: number;
-        onTimePct: number;
-        atRisk: number;
+        totalTasks?: number;
+        activeTasks?: { value?: number; change?: number };
+        pendingApprovals?: { value?: number; change?: number };
+        completed?: { value?: number; change?: number };
+        efficiency?: number;
+        teamSize?: number;
+        onTimePct?: number;
+        atRisk?: number;
+        [key: string]: any;
     };
 }
 
 const formatChange = (value: number) => `${value >= 0 ? '+' : ''}${Math.abs(value)}%`;
 
 export function SegmentedIndicator({ activeFilter, taskIndicators }: SegmentedIndicatorProps) {
-    const data = taskIndicators ?? {
-        totalTasks: 0,
-        activeTasks: { value: 0, change: 0 },
-        completed: { value: 0, change: 0 },
-        efficiency: 0,
-        teamSize: 0,
-        onTimePct: 0,
-        atRisk: 0,
-    };
+    const activeTasksValue =
+        taskIndicators?.activeTasks?.value ??
+        (typeof (taskIndicators as any)?.inProgress === 'number' ? (taskIndicators as any).inProgress : 0);
+    const activeTasksChange = taskIndicators?.activeTasks?.change ?? 0;
+
+    const completedTasksValue =
+        taskIndicators?.completed?.value ??
+        (typeof (taskIndicators as any)?.completed === 'number' ? (taskIndicators as any).completed : 0);
+    const completedTasksChange = taskIndicators?.completed?.change ?? 0;
+
+    const totalTasks =
+        taskIndicators?.totalTasks ??
+        (activeTasksValue + completedTasksValue);
+
+    const efficiency = taskIndicators?.efficiency ?? (totalTasks > 0 ? Math.round((completedTasksValue / totalTasks) * 100) : 0);
+    const teamSize = taskIndicators?.teamSize ?? 0;
+    const onTimePct = taskIndicators?.onTimePct ?? 100;
+    const atRisk = taskIndicators?.atRisk ?? 0;
 
     const total = Math.max(
-        data.totalTasks,
-        data.activeTasks.value + data.completed.value,
+        totalTasks,
+        activeTasksValue + completedTasksValue,
     );
 
     const segments = [
         {
             label: 'Active Tasks',
-            value: data.activeTasks.value,
-            change: data.activeTasks.change,
+            value: activeTasksValue,
+            change: activeTasksChange,
             icon: Clock,
             accent: 'text-[#1D4F6D]',
             bar: 'bg-[#1D4F6D]',
@@ -45,8 +56,8 @@ export function SegmentedIndicator({ activeFilter, taskIndicators }: SegmentedIn
         },
         {
             label: 'Completed',
-            value: data.completed.value,
-            change: data.completed.change,
+            value: completedTasksValue,
+            change: completedTasksChange,
             icon: CheckCircle2,
             accent: 'text-emerald-600',
             bar: 'bg-emerald-500',
@@ -68,13 +79,13 @@ export function SegmentedIndicator({ activeFilter, taskIndicators }: SegmentedIn
                     <div className="flex items-center justify-between gap-4">
                         <div>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em]">{activeFilter} view</p>
-                            <h3 className="mt-2 text-3xl font-black text-gray-900 leading-none">{data.totalTasks || total}</h3>
+                            <h3 className="mt-2 text-3xl font-black text-gray-900 leading-none">{totalTasks || total}</h3>
                             <p className="mt-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Tasks</p>
                         </div>
                         <div className="text-right">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.18em]">Efficiency</p>
-                            <p className="mt-2 text-3xl font-black text-[#1D4F6D] leading-none">{data.efficiency}%</p>
-                            <p className="mt-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">On Time {data.onTimePct}%</p>
+                            <p className="mt-2 text-3xl font-black text-[#1D4F6D] leading-none">{efficiency}%</p>
+                            <p className="mt-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">On Time {onTimePct}%</p>
                         </div>
                     </div>
 
@@ -116,28 +127,28 @@ export function SegmentedIndicator({ activeFilter, taskIndicators }: SegmentedIn
                             <Zap className="h-3.5 w-3.5 text-[#1D4F6D]" />
                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Efficiency</p>
                         </div>
-                        <p className="text-2xl font-black text-[#1D4F6D]">{data.efficiency}%</p>
+                        <p className="text-2xl font-black text-[#1D4F6D]">{efficiency}%</p>
                     </div>
                     <div className="p-3 rounded-xl bg-gradient-to-br from-gray-50 to-transparent border border-gray-100/50 text-center">
                         <div className="flex items-center justify-center gap-1.5 mb-1">
                             <Users className="h-3.5 w-3.5 text-gray-600" />
                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Team Size</p>
                         </div>
-                        <p className="text-2xl font-black text-gray-900">{data.teamSize}</p>
+                        <p className="text-2xl font-black text-gray-900">{teamSize}</p>
                     </div>
                     <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-transparent border border-emerald-100/50 text-center">
                         <div className="flex items-center justify-center gap-1.5 mb-1">
                             <Target className="h-3.5 w-3.5 text-emerald-600" />
                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">On Time</p>
                         </div>
-                        <p className="text-2xl font-black text-emerald-600">{data.onTimePct}%</p>
+                        <p className="text-2xl font-black text-emerald-600">{onTimePct}%</p>
                     </div>
                     <div className="p-3 rounded-xl bg-gradient-to-br from-red-50 to-transparent border border-red-100/50 text-center">
                         <div className="flex items-center justify-center gap-1.5 mb-1">
                             <AlertCircle className="h-3.5 w-3.5 text-red-600" />
                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">At Risk</p>
                         </div>
-                        <p className="text-2xl font-black text-red-600">{data.atRisk}</p>
+                        <p className="text-2xl font-black text-red-600">{atRisk}</p>
                     </div>
                 </div>
             </CardContent>

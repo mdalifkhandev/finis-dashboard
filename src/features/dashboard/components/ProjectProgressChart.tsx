@@ -17,20 +17,20 @@ const periodLabels: Record<DashboardFilter, string> = {
 };
 
 export function ProjectProgressChart({ filter = 'monthly', forecast }: ProjectProgressChartProps) {
-    const data = forecast?.data ?? [];
+    const data = Array.isArray(forecast?.data) ? forecast.data : [];
     const hasData = data.length > 0;
 
-    const maxValue = hasData ? Math.max(...data.map((entry) => entry.completionPct)) : 0;
-    const minValue = hasData ? Math.min(...data.map((entry) => entry.completionPct)) : 0;
+    const maxValue = hasData ? Math.max(...data.map((entry) => entry?.completionPct ?? 0)) : 0;
+    const minValue = hasData ? Math.min(...data.map((entry) => entry?.completionPct ?? 0)) : 0;
     const bestMonth = forecast?.bestMonth
         ? data.find((_, index) => index + 1 === forecast.bestMonth?.month)?.month ?? `Month ${forecast.bestMonth.month}`
         : hasData
-            ? data.find((entry) => entry.completionPct === maxValue)?.month ?? 'Peak'
+            ? data.find((entry) => entry?.completionPct === maxValue)?.month ?? 'Peak'
             : 'No data';
 
     const periodLabel = periodLabels[filter];
-    const overallCompletion = forecast?.overallCompletion ?? 0;
-    const avgCompletion = forecast?.avgCompletion ?? 0;
+    const overallCompletion = typeof forecast?.overallCompletion === 'number' ? forecast.overallCompletion : 0;
+    const avgCompletion = typeof forecast?.avgCompletion === 'number' ? forecast.avgCompletion : 0;
 
     return (
         <Card className="col-span-2 h-full border-gray-100 shadow-sm rounded-3xl overflow-hidden transition-all hover:shadow-md">
