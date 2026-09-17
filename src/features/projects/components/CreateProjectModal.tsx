@@ -248,7 +248,9 @@ export function CreateProjectModal({
                   const company = companies.find(c => c.id === value);
                   setFormData({ ...formData, companyId: value, companyName: company?.name || '' });
                 }}
-                options={companies.map(c => ({ value: c.id, label: c.name }))}
+                options={companies
+                  .filter(c => c.status !== 'inactive')
+                  .map(c => ({ value: c.id, label: c.name }))}
                 placeholder="Select company"
                 className="h-11"
               />
