@@ -56,6 +56,7 @@ export const API_ENDPOINTS = {
         DOCUMENTS: (id: string) => `/admin/companies/${id}/documents`,
         DOCUMENT_DELETE: (companyId: string, documentId: string) => `/admin/companies/${companyId}/documents/${documentId}`,
         PROJECTS: (id: string) => `/admin/companies/${id}/projects`,
+        PERFORMANCE: (id: string) => `/admin/companies/${id}/performance`,
     },
 
     // WORKFORCE

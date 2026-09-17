@@ -107,6 +107,18 @@ export interface CompanyProjectResponse {
     endDate?: string | null;
     progress?: number | null;
     createdAt?: string;
+    numFloors?: number | null;
+    unitPerFloor?: number | null;
+    isWholeHouse?: boolean | null;
+    houseSections?: string[] | null;
+    floors?: Array<{
+        id: string;
+        name: string;
+        floorNumber?: number;
+        status?: string;
+        units?: Array<{ id: string; name: string; type?: string | null; status?: string }>;
+        rooms?: Array<{ id: string; name: string; type?: string | null; status?: string }>;
+    }>;
 }
 
 export interface CompanyPerformanceResponse {
@@ -347,24 +359,57 @@ export const mapBackendCompanyProjectToView = (
     companyId: string,
     companyName: string,
     project: CompanyProjectResponse,
-): Project => ({
-    id: project.id,
-    name: project.name,
-    companyId,
-    companyName,
-    type: getProjectType(project.type),
-    projectConfig: undefined,
-    description: project.name,
-    status: (project.status || 'planning') as Project['status'],
-    startDate: project.startDate || project.createdAt || new Date().toISOString(),
-    endDate: project.endDate || undefined,
-    budget: project.budget ?? 0,
-    address: '',
-    floors: [] as Project['floors'],
-    progress: project.progress ?? 0,
-    hasBudget: Boolean(project.budget && project.budget > 0),
-    createdAt: project.startDate || new Date().toISOString(),
-});
+): Project => {
+    const rawFloors = project.floors ?? [];
+    const mappedFloors: Project['floors'] = rawFloors.map((floor, floorIndex) => {
+        const rawRooms = floor.units ?? floor.rooms ?? [];
+        return {
+            id: floor.id,
+            projectId: project.id,
+            number: floor.floorNumber ?? floorIndex + 1,
+            name: floor.name || `Floor ${floorIndex + 1}`,
+            type: 'floor' as const,
+            status: (floor.status as any) || 'pending',
+            progress: 0,
+            totalRooms: rawRooms.length,
+            rooms: rawRooms.map((room, roomIndex) => ({
+                id: room.id,
+                floorId: floor.id,
+                number: room.name || String(roomIndex + 1),
+                name: room.name || `Unit ${roomIndex + 1}`,
+                status: 'pending' as const,
+                progress: 0,
+                assignedWorkers: [],
+                tasks: [],
+            })),
+            tasks: [],
+        };
+    });
+
+    return {
+        id: project.id,
+        name: project.name,
+        companyId,
+        companyName,
+        type: getProjectType(project.type),
+        projectConfig: project.type === 'house' || project.isWholeHouse
+            ? {
+                houseType: project.isWholeHouse === false ? 'sections' : 'whole_house',
+                sections: project.houseSections ?? [],
+            }
+            : undefined,
+        description: project.name,
+        status: (project.status || 'planning') as Project['status'],
+        startDate: project.startDate || project.createdAt || new Date().toISOString(),
+        endDate: project.endDate || undefined,
+        budget: project.budget ?? 0,
+        address: '',
+        floors: mappedFloors,
+        progress: project.progress ?? 0,
+        hasBudget: Boolean(project.budget && project.budget > 0),
+        createdAt: project.startDate || new Date().toISOString(),
+    };
+};
 
 export const mapBackendDocumentToView = (document: CompanyDocumentResponse): CompanyViewDocument => ({
     id: document.id,
@@ -514,9 +559,19 @@ export const companiesApi = createApi({
         }),
 
         getCompanyPerformance: builder.query<CompanyPerformanceResponse, string>({
-            query: (companyId) => ({
-                url: API_ENDPOINTS.SUPER_ADMIN.COMPANIES.PERFORMANCE(companyId),
-            }),
+            query: (companyId) => {
+                const stored = localStorage.getItem('auth_user');
+                let isSuperAdmin = false;
+                try {
+                    isSuperAdmin = (JSON.parse(stored || '{}') as { role?: string })?.role === 'super_admin';
+                } catch {}
+
+                return {
+                    url: isSuperAdmin
+                        ? API_ENDPOINTS.SUPER_ADMIN.COMPANIES.PERFORMANCE(companyId)
+                        : API_ENDPOINTS.COMPANIES.PERFORMANCE(companyId),
+                };
+            },
             transformResponse: (response: ApiEnvelope<CompanyPerformanceResponse> | CompanyPerformanceResponse): CompanyPerformanceResponse => {
                 if ('success' in response && 'data' in response) {
                     return response.data;

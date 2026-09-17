@@ -61,15 +61,20 @@ export function ProjectTable({
     header: 'Structure',
     render: (project) => {
       let summary = '';
-      if (project.type === 'apartment_building') {
-        const unitCount = project.floors.reduce((acc, f) => acc + f.rooms.length, 0);
-        summary = `${project.floors.length} Floors • ${unitCount} Units`;
+      if (project.type === 'apartment_building' || (project.type as string) === 'apartment') {
+        const floorCount = project.floors?.length || (project as any).numFloors || 0;
+        const unitCount = (project.floors ?? []).reduce((acc, f) => acc + (f.rooms?.length || f.totalRooms || 0), 0);
+        summary = `${floorCount} Floors • ${unitCount} Units`;
       } else if (project.type === 'house') {
         if (project.projectConfig?.houseType === 'sections') {
           summary = `${project.projectConfig.sections?.length || 0} Sections`;
         } else {
           summary = 'Whole House';
         }
+      } else {
+        const floorCount = project.floors?.length || (project as any).numFloors || 0;
+        const unitCount = (project.floors ?? []).reduce((acc, f) => acc + (f.rooms?.length || f.totalRooms || 0), 0);
+        summary = floorCount > 0 ? `${floorCount} Floors • ${unitCount} Units` : 'N/A';
       }
       return <span className="text-sm text-gray-600 font-medium">{summary}</span>;
     }
@@ -96,14 +101,35 @@ export function ProjectTable({
   {
     key: 'endDate',
     header: 'Deadline',
-    render: (project) => <span className="text-sm text-gray-600">{project.endDate || 'N/A'}</span>
+    render: (project) => {
+      if (!project.endDate) return <span className="text-sm text-gray-600">N/A</span>;
+      try {
+        const d = new Date(project.endDate);
+        if (isNaN(d.getTime())) return <span className="text-sm text-gray-600">{project.endDate}</span>;
+        return (
+          <span className="text-sm text-gray-600">
+            {d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </span>
+        );
+      } catch {
+        return <span className="text-sm text-gray-600">{project.endDate}</span>;
+      }
+    }
   }, {
     key: 'actions',
     header: '',
-    render: () => (
-      <Button variant="ghost" size="icon" className="text-gray-400">
-        <MoreHorizontal className="h-4 w-4" />
-      </Button>
+    render: (project) => (
+      <div onClick={(e) => e.stopPropagation()}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-gray-400 hover:text-gray-700"
+          onClick={() => navigate(`/projects/${project.id}`)}
+          title="View Project"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </div>
     )
   }];
   return <Table data={data} columns={columns} onRowClick={project => navigate(`/projects/${project.id}`)} />;
