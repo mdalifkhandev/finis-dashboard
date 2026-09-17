@@ -37,8 +37,9 @@ export function ProjectCard({
 
   const getConfigSummary = () => {
     if (project.type === 'apartment_building') {
-      const unitCount = project.floors.reduce((acc, floor) => acc + floor.rooms.length, 0);
-      return `${project.floors.length} Floors • ${unitCount} Units`;
+      const floors = project.floors || [];
+      const unitCount = floors.reduce((acc, floor) => acc + (floor.rooms?.length || (floor as any).units?.length || 0), 0);
+      return `${floors.length} Floors • ${unitCount} Units`;
     }
     if (project.type === 'house') {
       if (project.projectConfig?.houseType === 'sections') {

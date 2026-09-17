@@ -189,15 +189,17 @@ export function ProjectDetailPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button
-              variant="outline"
-              className="gap-2 h-11 px-5 border-blue-200 text-blue-600 hover:bg-blue-50 transition-all font-bold"
-              onClick={handleGenerateLink}
-              disabled={isGeneratingLink}
-            >
-              <LinkIcon className="h-4 w-4" />
-              {isGeneratingLink ? 'Generating...' : 'Generate Public Link'}
-            </Button>
+            {!isSuperAdmin && (
+              <Button
+                variant="outline"
+                className="gap-2 h-11 px-5 border-blue-200 text-blue-600 hover:bg-blue-50 transition-all font-bold"
+                onClick={handleGenerateLink}
+                disabled={isGeneratingLink}
+              >
+                <LinkIcon className="h-4 w-4" />
+                {isGeneratingLink ? 'Generating...' : 'Generate Public Link'}
+              </Button>
+            )}
             {!isSuperAdmin && (
               <Button
                 variant="outline"

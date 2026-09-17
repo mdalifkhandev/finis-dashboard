@@ -136,6 +136,7 @@ export function ProjectsPage() {
         onCreateProject={() => {
           setIsCreateModalOpen(true);
         }}
+        hideCreate={isSuperAdmin}
       />
 
       <ProjectStats projects={filteredProjects} />

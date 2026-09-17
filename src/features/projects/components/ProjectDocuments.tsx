@@ -33,6 +33,15 @@ function formatDate(dateStr?: string) {
 }
 
 export function ProjectDocuments() {
+    const authUser = (() => {
+        try {
+            const raw = localStorage.getItem('auth_user');
+            return raw ? JSON.parse(raw) as { role?: string } : null;
+        } catch {
+            return null;
+        }
+    })();
+    const isSuperAdmin = authUser?.role === 'super_admin';
     const { id: projectId } = useParams<{ id: string }>();
     const { data: documents = [], isLoading, error, refetch } = useProjectDocuments(projectId ?? '');
     const { uploadDocument, isUploading } = useUploadProjectDocument();
@@ -111,47 +120,51 @@ export function ProjectDocuments() {
                         <Filter className="h-4 w-4" />
                         Filter
                     </Button>
-                    <Button
-                        className="gap-2 h-10 bg-blue-600 hover:bg-blue-700 shadow-md flex-1 md:flex-none"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                    >
-                        {isUploading ? (
-                            <>
-                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                Uploading...
-                            </>
-                        ) : (
-                            <>
-                                <Upload className="h-4 w-4" />
-                                Upload File
-                            </>
-                        )}
-                    </Button>
-                    <Button
-                        className="gap-2 h-10 bg-gray-700 hover:bg-gray-800 shadow-md flex-1 md:flex-none"
-                        onClick={handleUpload}
-                        disabled={!selectedFile || isUploading}
-                    >
-                        {isUploading ? (
-                            <>
-                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                Saving...
-                            </>
-                        ) : (
-                            'Save'
-                        )}
-                    </Button>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        className="hidden"
-                        onChange={handleFileSelect}
-                        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.dwg"
-                    />
+                    {!isSuperAdmin && (
+                        <>
+                            <Button
+                                className="gap-2 h-10 bg-blue-600 hover:bg-blue-700 shadow-md flex-1 md:flex-none"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isUploading}
+                            >
+                                {isUploading ? (
+                                    <>
+                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                        Uploading...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="h-4 w-4" />
+                                        Upload File
+                                    </>
+                                )}
+                            </Button>
+                            <Button
+                                className="gap-2 h-10 bg-gray-700 hover:bg-gray-800 shadow-md flex-1 md:flex-none"
+                                onClick={handleUpload}
+                                disabled={!selectedFile || isUploading}
+                            >
+                                {isUploading ? (
+                                    <>
+                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    'Save'
+                                )}
+                            </Button>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                className="hidden"
+                                onChange={handleFileSelect}
+                                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.dwg"
+                            />
+                        </>
+                    )}
                 </div>
             </div>
-            {selectedFile && (
+            {!isSuperAdmin && selectedFile && (
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                     Selected file: <span className="font-semibold">{selectedFile.name}</span>
                 </div>
@@ -248,15 +261,17 @@ export function ProjectDocuments() {
                                                             </Button>
                                                         </>
                                                     )}
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 text-gray-400 hover:text-red-600"
-                                                        disabled={isDeleting}
-                                                        onClick={() => handleDelete(doc.id)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
+                                                    {!isSuperAdmin && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-gray-400 hover:text-red-600"
+                                                            disabled={isDeleting}
+                                                            onClick={() => handleDelete(doc.id)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
