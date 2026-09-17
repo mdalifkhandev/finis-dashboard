@@ -63,6 +63,21 @@ export interface Company {
   };
   projectCount: number;
   createdAt: string;
+  owner?: { id?: string; fullName?: string; email?: string; phone?: string } | null;
+  subscription?: {
+    planName: string;
+    status: string;
+    currentPeriodEnd?: string | null;
+    hasSubscription: boolean;
+  } | null;
+  tenant?: {
+    id?: string;
+    name?: string;
+    status?: string;
+    subscriptionStatus?: string | null;
+    currentPeriodEnd?: string | null;
+    plan?: { id?: string; name?: string } | null;
+  } | null;
 }
 
 export interface Project {

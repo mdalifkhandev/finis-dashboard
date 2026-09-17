@@ -313,8 +313,9 @@ const buildUpdatePayload = (data: Partial<Project>) => ({
 // ─── Projects List ───────────────────────────────────────────────────────────
 
 export function useProjects(params: UseProjectsParams = {}) {
+    const role = getCurrentUserRole();
     return useQuery({
-        queryKey: ['projects', params],
+        queryKey: ['projects', role, params],
         queryFn: async () => {
             const searchParams = new URLSearchParams();
             if (params.search) searchParams.set('search', params.search);

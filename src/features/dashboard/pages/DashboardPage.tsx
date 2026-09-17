@@ -404,8 +404,8 @@ export function DashboardPage() {
   const isSuperAdmin = authUser?.role === 'super_admin';
 
   if (!isSuperAdmin) {
-    return <AdminDashboard />;
+    return <AdminDashboard key={authUser?.id ?? 'admin'} />;
   }
 
-  return <SuperAdminDashboard />;
+  return <SuperAdminDashboard key={authUser?.id ?? 'super_admin'} />;
 }

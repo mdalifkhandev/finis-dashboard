@@ -41,7 +41,19 @@ export const projectApi = createApi({
     tagTypes: ['Projects'],
     endpoints: (builder) => ({
         getProjectsByCompany: builder.query<CompanyProjectResponse[], string>({
-            query: (companyId) => ({ url: API_ENDPOINTS.SUPER_ADMIN.COMPANIES.PROJECTS(companyId) }),
+            query: (companyId) => {
+                const stored = localStorage.getItem('auth_user');
+                let isSuperAdmin = false;
+                try {
+                    isSuperAdmin = (JSON.parse(stored || '{}') as { role?: string })?.role === 'super_admin';
+                } catch {}
+
+                return {
+                    url: isSuperAdmin
+                        ? API_ENDPOINTS.SUPER_ADMIN.COMPANIES.PROJECTS(companyId)
+                        : API_ENDPOINTS.COMPANIES.PROJECTS(companyId),
+                };
+            },
             transformResponse: (response: ApiEnvelope<CompanyProjectResponse[]> | CompanyProjectResponse[]): CompanyProjectResponse[] => {
                 if (response && typeof response === 'object' && 'success' in response && 'data' in response) {
                     return response.data;

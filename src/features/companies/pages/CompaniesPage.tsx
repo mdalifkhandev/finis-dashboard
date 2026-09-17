@@ -10,12 +10,18 @@ import {
 } from '../components';
 import { Company } from '@/shared/types';
 import { useCompanies, useCreateCompany, useCompanyStats } from '../hooks/useCompanies';
+import { useToggleCompanyStatusMutation } from '@/store/companiesApi';
+import { useAppSelector } from '@/store/hooks';
+import { selectAuthUser } from '@/store/authSlice';
 import { useDebounce } from '@/shared/hooks';
 import { SEO } from '@/shared/components/seo/SEO';
 
 export function CompaniesPage() {
+  const authUser = useAppSelector(selectAuthUser);
+  const isSuperAdmin = authUser?.role === 'super_admin';
   const { companies, isLoading, refetch: refetchCompanies } = useCompanies();
   const { createCompany } = useCreateCompany();
+  const [toggleCompanyStatus] = useToggleCompanyStatusMutation();
   const [view, setView] = useState<'grid' | 'table'>('grid');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
@@ -27,6 +33,15 @@ export function CompaniesPage() {
   const [timeFilter, setTimeFilter] = useState('monthly');
   const [customDateRange, setCustomDateRange] = useState<{ start: Date; end: Date } | null>(null);
   const { stats: companyStats } = useCompanyStats(timeFilter, customDateRange);
+
+  const handleToggleStatus = async (companyId: string) => {
+    try {
+      await toggleCompanyStatus(companyId).unwrap();
+      await refetchCompanies();
+    } catch (err) {
+      console.error('Failed to toggle company status:', err);
+    }
+  };
 
   const handleCreateCompany = async (newCompanyData: Partial<Company>) => {
     const newCompany: Company = {
@@ -129,6 +144,8 @@ export function CompaniesPage() {
           setTimeFilter('custom');
         }}
         onCreateCompany={() => setIsCreateModalOpen(true)}
+        canCreate={!isSuperAdmin}
+        isSuperAdmin={isSuperAdmin}
       />
 
       <CompanyStats companies={filteredCompanies} stats={companyStats} />
@@ -162,7 +179,12 @@ export function CompaniesPage() {
       {view === 'grid' ? (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredCompanies.map((company) => (
-            <CompanyCard key={company.id} company={company} />
+            <CompanyCard
+              key={company.id}
+              company={company}
+              isSuperAdmin={isSuperAdmin}
+              onToggleStatus={handleToggleStatus}
+            />
           ))}
           {filteredCompanies.length === 0 && (
             <div className="col-span-full text-center py-12">
@@ -173,6 +195,8 @@ export function CompaniesPage() {
       ) : (
         <CompanyTable
           data={filteredCompanies.slice(0, 10)}
+          isSuperAdmin={isSuperAdmin}
+          onToggleStatus={handleToggleStatus}
           pagination={{
             currentPage: 1,
             totalPages: Math.ceil(filteredCompanies.length / 10),

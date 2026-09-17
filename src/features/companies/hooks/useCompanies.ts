@@ -10,6 +10,8 @@ import {
 } from '@/store/companiesApi';
 import { useGetProjectsByCompanyQuery } from '@/store/projectApi';
 import { mapBackendProfileToCompany, type CompanyProfileResponse } from '@/store/companiesApi';
+import { useAppSelector } from '@/store/hooks';
+import { selectAuthUser } from '@/store/authSlice';
 
 interface CompanyDateRange {
     start: Date;
@@ -62,12 +64,17 @@ export function useCompanyProfile(id: string) {
 }
 
 export function useCompanyStats(period: string, customRange?: CompanyDateRange | null) {
+    const authUser = useAppSelector(selectAuthUser);
+    const isSuperAdmin = authUser?.role === 'super_admin';
+
     const query = useGetCompanyStatsQuery({
         period: normalizePeriod(period),
         ...(period === 'custom' && customRange ? {
             startDate: customRange.start.toISOString(),
             endDate: customRange.end.toISOString(),
         } : {}),
+    }, {
+        skip: !isSuperAdmin,
     });
 
     return {

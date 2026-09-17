@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCompanyProfile, useCompanyProjects, useCompanyPerformance, useCompanyDocuments, useUpdateCompany } from '../hooks';
-import { Building2, Globe, Mail, Phone, MapPin, Edit, ChevronLeft } from 'lucide-react';
+import { Building2, Globe, Mail, Phone, MapPin, Edit, ChevronLeft, CreditCard, User, ShieldAlert, Lock } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Tabs } from '@/shared/components/ui/Tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/Avatar';
-import { getFullUrl } from '@/shared/utils';
+import { getFullUrl, cn } from '@/shared/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/Card';
 import { ProjectTable, CreateProjectModal } from '@/features/projects/components';
 import {
@@ -22,6 +22,8 @@ import { mapBackendCompanyProjectToView, mapBackendProfileToCompany } from '@/st
 import { useCreateProject } from '@/features/projects/hooks';
 import { apiClient } from '@/services/api/client';
 import { Link as LinkIcon } from 'lucide-react';
+import { useAppSelector } from '@/store/hooks';
+import { selectAuthUser } from '@/store/authSlice';
 
 const getLinkHostname = (url?: string) => {
   if (!url) return 'N/A';
@@ -40,7 +42,10 @@ const getLinkHostname = (url?: string) => {
 export function CompanyDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { profile, isLoading: isProfileLoading } = useCompanyProfile(id ?? '');
+  const authUser = useAppSelector(selectAuthUser);
+  const isSuperAdmin = authUser?.role === 'super_admin';
+  const canEdit = !isSuperAdmin;
+  const { profile, isLoading: isProfileLoading, error: profileError } = useCompanyProfile(id ?? '');
   const { projects: companyProjectRows, isLoading: isProjectsLoading } = useCompanyProjects(id ?? '');
   const { performance, isLoading: isPerformanceLoading } = useCompanyPerformance(id ?? '');
   const { documents, isLoading: isDocumentsLoading } = useCompanyDocuments(id ?? '');
@@ -127,6 +132,13 @@ export function CompanyDetailPage() {
     setIsEditModalOpen(false);
   };
 
+  const isSuspended = !isSuperAdmin && (
+    (profileError as any)?.status === 403 ||
+    (profileError as any)?.data?.statusCode === 403 ||
+    profile?.isActive === false ||
+    company?.status === 'inactive'
+  );
+
   const isLoading = isProfileLoading || isProjectsLoading || isPerformanceLoading || isDocumentsLoading;
 
   if (isLoading) {
@@ -134,6 +146,27 @@ export function CompanyDetailPage() {
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#1D4F6D] border-t-transparent" />
         <p className="text-gray-500 font-medium">Loading company details...</p>
+      </div>
+    );
+  }
+
+  if (isSuspended) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[450px] max-w-lg mx-auto text-center p-8 bg-white rounded-3xl border border-red-100 shadow-sm space-y-5 my-12">
+        <div className="h-16 w-16 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center border border-red-100 shadow-inner">
+          <ShieldAlert className="h-8 w-8" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black text-gray-900">Company Suspended</h2>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            This company has been suspended by the platform Super Administrator. Access to company details, projects, workforce, and documents is temporarily restricted.
+          </p>
+        </div>
+        <div className="pt-2">
+          <Button onClick={() => navigate('/companies')} className="bg-[#1D4F6D] hover:bg-[#153a50] text-white rounded-xl px-6">
+            Back to Companies
+          </Button>
+        </div>
       </div>
     );
   }
@@ -169,15 +202,35 @@ export function CompanyDetailPage() {
             </AvatarFallback>
           </Avatar>
           <div className="space-y-3 text-center sm:text-left">
-            <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-center gap-3 flex-wrap">
               <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
                 {company.name}
               </h1>
               <Badge variant="success" className="px-3 py-1 rounded-full font-bold uppercase tracking-wider text-[10px]">
                 {company.status || 'Active'} Partner
               </Badge>
+              {company.subscription && (
+                <span
+                  className={cn(
+                    'px-3 py-1 rounded-full font-bold uppercase tracking-wider text-[10px] border flex items-center gap-1.5',
+                    company.subscription.hasSubscription
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                  )}
+                >
+                  <CreditCard className="h-3 w-3" />
+                  {company.subscription.planName} • {company.subscription.status === 'active' ? 'Active' : company.subscription.status}
+                </span>
+              )}
             </div>
             <div className="flex flex-wrap justify-center sm:justify-start items-center gap-4 text-sm text-gray-500 font-medium">
+              {company.owner && (
+                <div className="flex items-center gap-1.5 bg-blue-50/80 px-2.5 py-1 rounded-lg text-xs font-semibold text-[#1D4F6D]">
+                  <User className="h-3.5 w-3.5 shrink-0" />
+                  <span>Owner: {company.owner.fullName || company.contact.name || 'Admin'}</span>
+                  {company.owner.email && <span className="text-gray-400 font-normal">({company.owner.email})</span>}
+                </div>
+              )}
               <div className="flex items-center gap-1.5">
                 <Building2 className="h-4 w-4 text-[#1D4F6D]" />
                 {company.industry || 'Construction'}
@@ -213,13 +266,15 @@ export function CompanyDetailPage() {
             <Mail className="h-4 w-4" />
             Contact Company
           </Button>
-          <Button
-            className="gap-2 h-12 px-8 bg-[#1D4F6D] hover:bg-[#163a50] text-white shadow-lg shadow-blue-900/10 transition-all hover:scale-[1.02] font-bold"
-            onClick={() => setIsEditModalOpen(true)}
-          >
-            <Edit className="h-4 w-4" />
-            Edit Profile
-          </Button>
+          {canEdit && (
+            <Button
+              className="gap-2 h-12 px-8 bg-[#1D4F6D] hover:bg-[#163a50] text-white shadow-lg shadow-blue-900/10 transition-all hover:scale-[1.02] font-bold"
+              onClick={() => setIsEditModalOpen(true)}
+            >
+              <Edit className="h-4 w-4" />
+              Edit Profile
+            </Button>
+          )}
         </div>
       </div>
 
@@ -396,13 +451,15 @@ export function CompanyDetailPage() {
         companyName={company.name}
         contactEmail={directContact?.email || company.contact.email}
       />
-      <EditCompanyProfileModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        company={company}
-        onSave={handleUpdateCompany}
-        isSubmitting={isUpdatingCompany}
-      />
+      {canEdit && (
+        <EditCompanyProfileModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          company={company}
+          onSave={handleUpdateCompany}
+          isSubmitting={isUpdatingCompany}
+        />
+      )}
     </div>
   );
 }

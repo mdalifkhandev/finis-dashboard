@@ -54,6 +54,7 @@ export const API_ENDPOINTS = {
         DELETE: (id: string) => `/admin/companies/${id}`,
         CONTACTS: (id: string) => `/admin/companies/${id}/contacts`,
         DOCUMENTS: (id: string) => `/admin/companies/${id}/documents`,
+        DOCUMENT_DELETE: (companyId: string, documentId: string) => `/admin/companies/${companyId}/documents/${documentId}`,
         PROJECTS: (id: string) => `/admin/companies/${id}/projects`,
     },
 

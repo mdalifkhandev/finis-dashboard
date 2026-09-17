@@ -6,14 +6,26 @@ import { DateRangeFilter } from '@/features/dashboard/components/DateRangeFilter
 interface CompaniesHeaderProps {
     onFilterChange: (filter: string) => void;
     onCustomDateChange: (start: Date, end: Date) => void;
-    onCreateCompany: () => void;
+    onCreateCompany?: () => void;
+    canCreate?: boolean;
+    isSuperAdmin?: boolean;
 }
 
-export function CompaniesHeader({ onFilterChange, onCustomDateChange, onCreateCompany }: CompaniesHeaderProps) {
+export function CompaniesHeader({
+    onFilterChange,
+    onCustomDateChange,
+    onCreateCompany,
+    canCreate = true,
+    isSuperAdmin = false,
+}: CompaniesHeaderProps) {
     return (
         <PageHeader
             title="Companies"
-            description="Manage your contractors, suppliers, and partners"
+            description={
+                isSuperAdmin
+                    ? 'Global directory of all platform companies and tenant organizations'
+                    : 'Manage your companies, contractors, and site operations'
+            }
             icon={Building2}
         >
             <DateRangeFilter
@@ -21,13 +33,15 @@ export function CompaniesHeader({ onFilterChange, onCustomDateChange, onCreateCo
                 onCustomDateChange={onCustomDateChange}
             />
 
-            <Button
-                onClick={onCreateCompany}
-                className="gap-2 shadow-lg shadow-blue-100 h-10 bg-[#1D4F6D] hover:bg-[#0f2331] rounded-xl"
-            >
-                <Plus className="h-4 w-4" />
-                Add Company
-            </Button>
+            {canCreate && onCreateCompany && (
+                <Button
+                    onClick={onCreateCompany}
+                    className="gap-2 shadow-lg shadow-blue-100 h-10 bg-[#1D4F6D] hover:bg-[#0f2331] rounded-xl"
+                >
+                    <Plus className="h-4 w-4" />
+                    Add Company
+                </Button>
+            )}
         </PageHeader>
     );
 }

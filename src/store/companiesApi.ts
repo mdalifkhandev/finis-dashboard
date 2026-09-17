@@ -30,6 +30,7 @@ export interface CompanyProfileResponse {
     description?: string | null;
     industry?: string | null;
     status?: 'active' | 'inactive' | 'pending' | null;
+    isActive?: boolean | null;
     revenue?: number | null;
     address?: string | null;
     location?: string | null;
@@ -217,63 +218,130 @@ export const mapBackendCompanySummaryToCompany = (company: {
     logoUrl: string | null;
     isActive: boolean;
     createdAt: string;
-    owner?: { fullName: string; email: string } | null;
+    owner?: { id?: string; fullName?: string; email?: string; phone?: string | null; tenant?: any } | null;
+    tenant?: { id?: string; name?: string; status?: string; subscriptionStatus?: string | null; currentPeriodEnd?: string | null; plan?: { id?: string; name?: string } | null } | null;
     _count?: { projects?: number };
-}): Company => ({
-    id: company.id,
-    name: company.name,
-    logo: company.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(company.name)}&background=random`,
-    description: company.industry || '',
-    industry: company.industry || undefined,
-    status: company.isActive ? 'active' : 'inactive',
-    annualRevenue: company.revenue ?? undefined,
-    location: company.address || undefined,
-    contact: {
-        name: company.owner?.fullName || company.name,
-        email: company.email || company.owner?.email || '',
-        phone: company.phone || '',
-    },
-    address: company.address || '',
-    publicLink: company.website ? {
-        url: company.website,
-        enabled: true,
-        createdAt: company.createdAt,
-    } : undefined,
-    projectCount: company._count?.projects ?? 0,
-    createdAt: company.createdAt,
-});
+}): Company => {
+    const tenantObj = company.tenant || (company.owner as any)?.tenant;
+    const planName = tenantObj?.plan?.name || (tenantObj?.name ? `${tenantObj.name} Plan` : null);
+    const subStatus = tenantObj?.subscriptionStatus || tenantObj?.status || null;
+    const hasSubscription = Boolean(
+        planName &&
+        subStatus &&
+        subStatus !== 'cancelled' &&
+        subStatus !== 'inactive' &&
+        subStatus !== 'expired'
+    );
 
-export const mapBackendProfileToCompany = (company: CompanyProfileResponse): Company => ({
-    id: company.id,
-    name: company.name,
-    logo: company.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(company.name)}&background=random`,
-    description: company.description || company.industry || '',
-    industry: company.industry || undefined,
-    status: getCompanyStatus(company.status),
-    annualRevenue: company.revenue ?? undefined,
-    location: company.location || company.address || undefined,
-    contact: {
-        name: company.owner?.fullName || company.name,
-        email: company.email || company.owner?.email || '',
-        phone: company.phone || company.owner?.phone || '',
-    },
-    address: company.address || '',
-    publicLink: company.publicLink
-        ? {
-            url: company.publicLink.url,
-            enabled: company.publicLink.enabled ?? true,
-            createdAt: company.publicLink.createdAt || company.createdAt,
-        }
-        : company.website
+    return {
+        id: company.id,
+        name: company.name,
+        logo: company.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(company.name)}&background=random`,
+        description: company.industry || '',
+        industry: company.industry || undefined,
+        status: company.isActive ? 'active' : 'inactive',
+        annualRevenue: company.revenue ?? undefined,
+        location: company.address || undefined,
+        contact: {
+            name: company.owner?.fullName || company.name,
+            email: company.email || company.owner?.email || '',
+            phone: company.phone || company.owner?.phone || '',
+        },
+        address: company.address || '',
+        publicLink: company.website ? {
+            url: company.website,
+            enabled: true,
+            createdAt: company.createdAt,
+        } : undefined,
+        projectCount: company._count?.projects ?? 0,
+        createdAt: company.createdAt,
+        owner: company.owner ? {
+            id: company.owner.id,
+            fullName: company.owner.fullName,
+            email: company.owner.email,
+            phone: company.owner.phone ?? undefined,
+        } : null,
+        tenant: tenantObj ? {
+            id: tenantObj.id,
+            name: tenantObj.name,
+            status: tenantObj.status,
+            subscriptionStatus: tenantObj.subscriptionStatus,
+            currentPeriodEnd: tenantObj.currentPeriodEnd,
+            plan: tenantObj.plan,
+        } : null,
+        subscription: {
+            planName: planName || 'No Plan',
+            status: subStatus || (hasSubscription ? 'active' : 'none'),
+            currentPeriodEnd: tenantObj?.currentPeriodEnd || null,
+            hasSubscription,
+        },
+    };
+};
+
+export const mapBackendProfileToCompany = (company: CompanyProfileResponse): Company => {
+    const tenantObj = (company as any).tenant || (company.owner as any)?.tenant;
+    const planName = tenantObj?.plan?.name || (tenantObj?.name ? `${tenantObj.name} Plan` : null);
+    const subStatus = tenantObj?.subscriptionStatus || tenantObj?.status || null;
+    const hasSubscription = Boolean(
+        planName &&
+        subStatus &&
+        subStatus !== 'cancelled' &&
+        subStatus !== 'inactive' &&
+        subStatus !== 'expired'
+    );
+
+    return {
+        id: company.id,
+        name: company.name,
+        logo: company.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(company.name)}&background=random`,
+        description: company.description || company.industry || '',
+        industry: company.industry || undefined,
+        status: getCompanyStatus(company.status),
+        annualRevenue: company.revenue ?? undefined,
+        location: company.location || company.address || undefined,
+        contact: {
+            name: company.owner?.fullName || company.name,
+            email: company.email || company.owner?.email || '',
+            phone: company.phone || company.owner?.phone || '',
+        },
+        address: company.address || '',
+        publicLink: company.publicLink
             ? {
-                url: company.website,
-                enabled: true,
-                createdAt: company.createdAt,
+                url: company.publicLink.url,
+                enabled: company.publicLink.enabled ?? true,
+                createdAt: company.publicLink.createdAt || company.createdAt,
             }
-            : undefined,
-    projectCount: company._count?.projects ?? 0,
-    createdAt: company.createdAt,
-});
+            : company.website
+                ? {
+                    url: company.website,
+                    enabled: true,
+                    createdAt: company.createdAt,
+                }
+                : undefined,
+        projectCount: company._count?.projects ?? 0,
+        createdAt: company.createdAt,
+        owner: company.owner ? {
+            id: (company.owner as any).id,
+            fullName: company.owner.fullName ?? undefined,
+            email: company.owner.email ?? undefined,
+            phone: company.owner.phone ?? undefined,
+        } : null,
+        tenant: tenantObj ? {
+            id: tenantObj.id,
+            name: tenantObj.name,
+            status: tenantObj.status,
+            subscriptionStatus: tenantObj.subscriptionStatus,
+            currentPeriodEnd: tenantObj.currentPeriodEnd,
+            plan: tenantObj.plan,
+        } : null,
+        subscription: {
+            planName: planName || 'No Plan',
+            status: subStatus || (hasSubscription ? 'active' : 'none'),
+            currentPeriodEnd: tenantObj?.currentPeriodEnd || null,
+            hasSubscription,
+        },
+    };
+};
 
 export const mapBackendCompanyProjectToView = (
     companyId: string,
@@ -330,8 +398,18 @@ export const companiesApi = createApi({
         getCompanies: builder.query<Company[], CompanyQueryArgs | void>({
             query: (queryArgs = {} as CompanyQueryArgs) => {
                 const args = queryArgs as CompanyQueryArgs;
+                const stored = localStorage.getItem('auth_user');
+                let isSuperAdmin = false;
+                try {
+                    isSuperAdmin = (JSON.parse(stored || '{}') as { role?: string })?.role === 'super_admin';
+                } catch {}
+
+                const url = isSuperAdmin
+                    ? API_ENDPOINTS.SUPER_ADMIN.COMPANIES.LIST
+                    : API_ENDPOINTS.COMPANIES.LIST;
+
                 return {
-                    url: API_ENDPOINTS.SUPER_ADMIN.COMPANIES.LIST,
+                    url,
                     params: {
                         ...(args.page ? { page: args.page } : {}),
                         ...(args.limit ? { limit: args.limit } : {}),
@@ -342,45 +420,46 @@ export const companiesApi = createApi({
                     },
                 };
             },
-            transformResponse: (response: ApiEnvelope<Array<{
-                id: string;
-                name: string;
-                industry: string | null;
-                revenue: number | null;
-                address: string | null;
-                website: string | null;
-                phone: string | null;
-                email: string | null;
-                logoUrl: string | null;
-                isActive: boolean;
-                createdAt: string;
-                owner?: { fullName: string; email: string } | null;
-                _count?: { projects?: number };
-            }>> | Array<{
-                id: string;
-                name: string;
-                industry: string | null;
-                revenue: number | null;
-                address: string | null;
-                website: string | null;
-                phone: string | null;
-                email: string | null;
-                logoUrl: string | null;
-                isActive: boolean;
-                createdAt: string;
-                owner?: { fullName: string; email: string } | null;
-                _count?: { projects?: number };
-            }>): Company[] => {
-                const companies = Array.isArray(response) ? response : response.data;
+            serializeQueryArgs: ({ endpointName, queryArgs }) => {
+                const stored = localStorage.getItem('auth_user');
+                let role = 'user';
+                let userId = '';
+                try {
+                    const parsed = JSON.parse(stored || '{}');
+                    role = parsed?.role || 'user';
+                    userId = parsed?.id || '';
+                } catch {}
+                return `${endpointName}_${role}_${userId}_${JSON.stringify(queryArgs || {})}`;
+            },
+            transformResponse: (response: ApiEnvelope<any[]> | any[]): Company[] => {
+                const companies = Array.isArray(response) ? response : (response?.data ?? []);
                 return companies.map(mapBackendCompanySummaryToCompany);
             },
             providesTags: ['Companies'],
         }),
 
         getCompanyProfile: builder.query<CompanyProfileResponse, string>({
-            query: (companyId) => ({
-                url: API_ENDPOINTS.SUPER_ADMIN.COMPANIES.DETAIL(companyId),
-            }),
+            query: (companyId) => {
+                const stored = localStorage.getItem('auth_user');
+                let isSuperAdmin = false;
+                try {
+                    isSuperAdmin = (JSON.parse(stored || '{}') as { role?: string })?.role === 'super_admin';
+                } catch {}
+
+                return {
+                    url: isSuperAdmin
+                        ? API_ENDPOINTS.SUPER_ADMIN.COMPANIES.DETAIL(companyId)
+                        : API_ENDPOINTS.COMPANIES.DETAIL(companyId),
+                };
+            },
+            serializeQueryArgs: ({ endpointName, queryArgs }) => {
+                const stored = localStorage.getItem('auth_user');
+                let role = 'user';
+                try {
+                    role = (JSON.parse(stored || '{}') as { role?: string })?.role || 'user';
+                } catch {}
+                return `${endpointName}_${role}_${queryArgs}`;
+            },
             transformResponse: (response: ApiEnvelope<CompanyProfileResponse> | CompanyProfileResponse): CompanyProfileResponse => {
                 if ('success' in response && 'data' in response) {
                     return response.data;
@@ -412,9 +491,19 @@ export const companiesApi = createApi({
         }),
 
         getCompanyProjects: builder.query<CompanyProjectResponse[], string>({
-            query: (companyId) => ({
-                url: API_ENDPOINTS.SUPER_ADMIN.COMPANIES.PROJECTS(companyId),
-            }),
+            query: (companyId) => {
+                const stored = localStorage.getItem('auth_user');
+                let isSuperAdmin = false;
+                try {
+                    isSuperAdmin = (JSON.parse(stored || '{}') as { role?: string })?.role === 'super_admin';
+                } catch {}
+
+                return {
+                    url: isSuperAdmin
+                        ? API_ENDPOINTS.SUPER_ADMIN.COMPANIES.PROJECTS(companyId)
+                        : API_ENDPOINTS.COMPANIES.PROJECTS(companyId),
+                };
+            },
             transformResponse: (response: ApiEnvelope<CompanyProjectResponse[]> | CompanyProjectResponse[]): CompanyProjectResponse[] => {
                 if ('success' in response && 'data' in response) {
                     return response.data;
@@ -438,9 +527,19 @@ export const companiesApi = createApi({
         }),
 
         getCompanyDocuments: builder.query<CompanyDocumentResponse[], string>({
-            query: (companyId) => ({
-                url: API_ENDPOINTS.SUPER_ADMIN.COMPANIES.DOCUMENTS(companyId),
-            }),
+            query: (companyId) => {
+                const stored = localStorage.getItem('auth_user');
+                let isSuperAdmin = false;
+                try {
+                    isSuperAdmin = (JSON.parse(stored || '{}') as { role?: string })?.role === 'super_admin';
+                } catch {}
+
+                return {
+                    url: isSuperAdmin
+                        ? API_ENDPOINTS.SUPER_ADMIN.COMPANIES.DOCUMENTS(companyId)
+                        : API_ENDPOINTS.COMPANIES.DOCUMENTS(companyId),
+                };
+            },
             transformResponse: (response: ApiEnvelope<CompanyDocumentResponse[]> | CompanyDocumentResponse[]): CompanyDocumentResponse[] => {
                 if ('success' in response && 'data' in response) {
                     return response.data;
@@ -452,10 +551,18 @@ export const companiesApi = createApi({
 
         uploadCompanyDocument: builder.mutation<CompanyDocumentResponse, CompanyDocumentUploadArgs>({
             query: ({ companyId, file }) => {
+                const stored = localStorage.getItem('auth_user');
+                let isSuperAdmin = false;
+                try {
+                    isSuperAdmin = (JSON.parse(stored || '{}') as { role?: string })?.role === 'super_admin';
+                } catch {}
+
                 const formData = new FormData();
                 formData.append('file', file);
                 return {
-                    url: API_ENDPOINTS.SUPER_ADMIN.COMPANIES.DOCUMENTS(companyId),
+                    url: isSuperAdmin
+                        ? API_ENDPOINTS.SUPER_ADMIN.COMPANIES.DOCUMENTS(companyId)
+                        : API_ENDPOINTS.COMPANIES.DOCUMENTS(companyId),
                     method: 'POST',
                     body: formData,
                 };
@@ -464,10 +571,20 @@ export const companiesApi = createApi({
         }),
 
         deleteCompanyDocument: builder.mutation<void, CompanyDocumentDeleteArgs>({
-            query: ({ companyId, documentId }) => ({
-                url: API_ENDPOINTS.SUPER_ADMIN.COMPANIES.DOCUMENT_DELETE(companyId, documentId),
-                method: 'DELETE',
-            }),
+            query: ({ companyId, documentId }) => {
+                const stored = localStorage.getItem('auth_user');
+                let isSuperAdmin = false;
+                try {
+                    isSuperAdmin = (JSON.parse(stored || '{}') as { role?: string })?.role === 'super_admin';
+                } catch {}
+
+                return {
+                    url: isSuperAdmin
+                        ? API_ENDPOINTS.SUPER_ADMIN.COMPANIES.DOCUMENT_DELETE(companyId, documentId)
+                        : API_ENDPOINTS.COMPANIES.DOCUMENT_DELETE(companyId, documentId),
+                    method: 'DELETE',
+                };
+            },
             invalidatesTags: ['Companies'],
         }),
 
@@ -562,6 +679,14 @@ export const companiesApi = createApi({
             transformResponse: (): void => undefined,
             invalidatesTags: ['Companies'],
         }),
+
+        toggleCompanyStatus: builder.mutation<{ success: boolean; message?: string }, string>({
+            query: (companyId) => ({
+                url: `/super-admin/companies/${companyId}/toggle-status`,
+                method: 'PATCH',
+            }),
+            invalidatesTags: ['Companies'],
+        }),
     }),
 });
 
@@ -581,4 +706,5 @@ export const {
     useUpdateCompanyMutation,
     useContactCompanyMutation,
     useDeleteCompanyMutation,
+    useToggleCompanyStatusMutation,
 } = companiesApi;

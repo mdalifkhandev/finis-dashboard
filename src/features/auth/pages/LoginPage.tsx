@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Building2, LockKeyhole, Mail } from 'lucide-react';
 import { useLoginMutation } from '@/store/authApi';
+import { setAuth } from '@/store/authSlice';
+import { useAppDispatch } from '@/store/hooks';
 import { ROUTES } from '@/config/routes';
 import { Button } from '@/shared/components/ui/Button';
 import { Card, CardContent } from '@/shared/components/ui/Card';
@@ -10,6 +12,7 @@ import { Label } from '@/shared/components/ui/Label';
 
 export function LoginPage() {
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
     const [login, { isLoading, error }] = useLoginMutation();
     const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
@@ -18,7 +21,8 @@ export function LoginPage() {
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         try {
-            await login({ identifier, password, rememberMe }).unwrap();
+            const res = await login({ identifier, password, rememberMe }).unwrap();
+            dispatch(setAuth({ token: res.accessToken, user: res.user }));
             navigate(ROUTES.DASHBOARD, { replace: true });
         } catch (err) {
             console.error('Login failed:', err);
