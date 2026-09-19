@@ -23,6 +23,8 @@ export const ROUTES = {
     // Projects
     PROJECTS: '/projects',
     PROJECT_DETAIL: '/projects/:id',
+    TASK_DETAIL: '/projects/:projectId/tasks/:taskId',
+    SUBTASK_DETAIL: '/projects/:projectId/subtasks/:taskId',
 
     // Companies
     COMPANIES: '/companies',
@@ -73,6 +75,8 @@ export const buildRoute = {
     companyDetail: (id: string) => `/companies/${id}`,
     workerDetail: (id: string) => `/workforce/${id}`,
     managerDetail: (id: string) => `/managers/${id}`,
+    taskDetail: (projectId: string, taskId: string) => `/projects/${projectId}/tasks/${taskId}`,
+    subtaskDetail: (projectId: string, taskId: string) => `/projects/${projectId}/subtasks/${taskId}`,
 };
 
 /**

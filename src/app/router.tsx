@@ -11,6 +11,7 @@ import { selectAuthToken } from '@/store/authSlice';
 const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const ProjectsPage = lazy(() => import('@/features/projects/pages/ProjectsPage').then((m) => ({ default: m.ProjectsPage })));
 const ProjectDetailPage = lazy(() => import('@/features/projects/pages/ProjectDetailPage').then((m) => ({ default: m.ProjectDetailPage })));
+const TaskDetailPage = lazy(() => import('@/features/projects/pages/TaskDetailPage').then((m) => ({ default: m.TaskDetailPage })));
 const CompaniesPage = lazy(() => import('@/features/companies/pages/CompaniesPage').then((m) => ({ default: m.CompaniesPage })));
 const CompanyDetailPage = lazy(() => import('@/features/companies/pages/CompanyDetailPage').then((m) => ({ default: m.CompanyDetailPage })));
 const WorkforcePage = lazy(() => import('@/features/workforce/pages/WorkforcePage').then((m) => ({ default: m.WorkforcePage })));
@@ -89,6 +90,8 @@ export function AppRouter() {
                     <Route path={ROUTES.MANAGER_DETAIL} element={<ManagerDetailPage />} />
                     <Route path={ROUTES.PROJECTS} element={<ProjectsPage />} />
                     <Route path={ROUTES.PROJECT_DETAIL} element={<ProjectDetailPage />} />
+                    <Route path={ROUTES.TASK_DETAIL} element={<TaskDetailPage />} />
+                    <Route path={ROUTES.SUBTASK_DETAIL} element={<TaskDetailPage />} />
                     <Route path={ROUTES.COMPANIES} element={<CompaniesPage />} />
                     <Route path={ROUTES.COMPANY_DETAIL} element={<CompanyDetailPage />} />
                     <Route path={ROUTES.WORKFORCE} element={<WorkforcePage />} />

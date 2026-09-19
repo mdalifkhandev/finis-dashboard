@@ -82,7 +82,11 @@ export const API_ENDPOINTS = {
         STATUS: (id: string) => `/admin/tasks/${id}/status`,
         SUBTASKS: (id: string) => `/admin/tasks/${id}/subtasks`,
         SUBTASK_DETAIL: (id: string) => `/admin/subtasks/${id}`,
+        SUBTASK_DELETE: (id: string) => `/admin/subtasks/${id}`,
+        SUBTASK_APPROVE: (id: string) => `/admin/subtasks/${id}/approval`,
         REVIEW_REPORT: (taskId: string, reportId: string) => `/admin/tasks/${taskId}/reports/${reportId}/review`,
+        REVIEW_APPROVAL: (taskId: string) => `/admin/tasks/${taskId}/approval`,
+        REVIEW_COMPLETION: (taskId: string) => `/admin/tasks/${taskId}/completion-review`,
     },
 
     // ADMINS & MANAGERS

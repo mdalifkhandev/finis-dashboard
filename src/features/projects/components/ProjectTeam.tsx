@@ -55,7 +55,21 @@ function AddMemberModal({ isOpen, onClose, projectId, type, managers = [] }: Add
             if (type === 'manager') {
                 await addManager({ projectId, userId: selectedUserId });
             } else {
-                const managerId = selectedManagerId || activeManagers[0]?.userId || activeManagers[0]?.id || undefined;
+                let managerId = selectedManagerId || (activeManagers.length > 0 ? (activeManagers[0]?.userId || activeManagers[0]?.id) : undefined);
+                
+                if (!managerId) {
+                    alert('Please select a manager to assign this worker to.');
+                    return;
+                }
+
+                // Check if the selected manager is already in the project
+                const isManagerInProject = activeManagers.some((m: any) => (m.userId || m.id) === managerId);
+                
+                // If not in project, add them to the project first
+                if (!isManagerInProject) {
+                    await addManager({ projectId, userId: managerId });
+                }
+
                 await addWorker({ projectId, userId: selectedUserId, managerId });
             }
             onClose();
@@ -98,7 +112,7 @@ function AddMemberModal({ isOpen, onClose, projectId, type, managers = [] }: Add
                             </select>
                         </div>
 
-                        {type === 'worker' && activeManagers.length > 0 && (
+                        {type === 'worker' && (
                             <div>
                                 <label className="text-sm font-bold text-gray-700 block mb-1">
                                     Assign to Manager
@@ -108,12 +122,22 @@ function AddMemberModal({ isOpen, onClose, projectId, type, managers = [] }: Add
                                     onChange={(e) => setSelectedManagerId(e.target.value)}
                                     className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D4F6D]"
                                 >
-                                    <option value="">-- Auto select first manager --</option>
-                                    {activeManagers.map((m: any) => (
-                                        <option key={m.userId || m.id} value={m.userId || m.id}>
-                                            {m.user?.fullName || m.fullName || m.name}
-                                        </option>
-                                    ))}
+                                    <option value="">{activeManagers.length > 0 ? '-- Auto select first manager --' : '-- Select a new manager --'}</option>
+                                    {activeManagers.length > 0 ? (
+                                        activeManagers.map((m: any) => (
+                                            <option key={m.userId || m.id} value={m.userId || m.id}>
+                                                {m.user?.fullName || m.fullName || m.name}
+                                            </option>
+                                        ))
+                                    ) : availableManagers.length > 0 ? (
+                                        availableManagers.map((m: any) => (
+                                            <option key={m.id} value={m.id}>
+                                                {m.fullName || m.name || m.email} (Available)
+                                            </option>
+                                        ))
+                                    ) : (
+                                        <option value="" disabled>No managers available</option>
+                                    )}
                                 </select>
                             </div>
                         )}
