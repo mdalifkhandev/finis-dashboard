@@ -70,6 +70,21 @@ export const API_ENDPOINTS = {
         DOCUMENTS: (id: string) => `/workers/${id}/documents`,
     },
 
+    // TASKS
+    TASKS: {
+        LIST: '/admin/tasks',
+        DETAIL: (id: string) => `/admin/tasks/${id}`,
+        CREATE: '/admin/tasks',
+        UPDATE: (id: string) => `/admin/tasks/${id}`,
+        DELETE: (id: string) => `/admin/tasks/${id}`,
+        ASSIGN: (id: string) => `/admin/tasks/${id}/assign`,
+        AVAILABLE_WORKERS: (id: string) => `/admin/tasks/${id}/available-workers`,
+        STATUS: (id: string) => `/admin/tasks/${id}/status`,
+        SUBTASKS: (id: string) => `/admin/tasks/${id}/subtasks`,
+        SUBTASK_DETAIL: (id: string) => `/admin/subtasks/${id}`,
+        REVIEW_REPORT: (taskId: string, reportId: string) => `/admin/tasks/${taskId}/reports/${reportId}/review`,
+    },
+
     // ADMINS & MANAGERS
     ADMINS: {
         LIST: '/admins',

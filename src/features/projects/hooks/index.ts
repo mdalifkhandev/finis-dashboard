@@ -24,3 +24,9 @@ export {
     useProjectFloorPlan,
     useProjectApprovals,
 } from './useProjects';
+
+export {
+    useTasks,
+    useCreateTask,
+    useAssignTask
+} from './useTasks';

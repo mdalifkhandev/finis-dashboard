@@ -1,11 +1,13 @@
 import { useNavigate } from 'react-router-dom';
-import { Calendar, MoreHorizontal, Building2, Home, Layout } from 'lucide-react';
+import { Calendar, MoreHorizontal, Building2, Home, Layout, Power, PowerOff } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/shared/components/ui/Card';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Progress } from '@/shared/components/ui/Progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/Avatar';
 import { Button } from '@/shared/components/ui/Button';
+import { Dropdown } from '@/shared/components/ui/Dropdown';
 import type { Project } from '@/shared/types';
+import { useSuspendProject } from '../hooks/useProjects';
 
 interface ProjectCardProps {
   project: Project;
@@ -14,6 +16,17 @@ export function ProjectCard({
   project
 }: ProjectCardProps) {
   const navigate = useNavigate();
+  const { suspendProject, isSuspending } = useSuspendProject();
+  const authUser = (() => {
+    try {
+      const raw = localStorage.getItem('auth_user');
+      return raw ? JSON.parse(raw) as { role?: string } : null;
+    } catch {
+      return null;
+    }
+  })();
+  const isSuperAdmin = authUser?.role === 'super_admin';
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
@@ -79,9 +92,37 @@ export function ProjectCard({
           )}
         </div>
       </div>
-      <Button variant="ghost" size="icon" className="-mr-2 -mt-2 text-gray-400">
-        <MoreHorizontal className="h-4 w-4" />
-      </Button>
+      <div onClick={(e) => e.stopPropagation()}>
+        {isSuperAdmin ? (
+          <Dropdown
+            trigger={
+              <Button variant="ghost" size="icon" className="-mr-2 -mt-2 text-gray-400">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            }
+            items={[
+              {
+                label: 'View Project',
+                onClick: () => navigate(`/projects/${project.id}`),
+              },
+              {
+                label: project.status === 'suspended' ? 'Reactivate Project' : 'Suspend Project',
+                icon: project.status === 'suspended' ? Power : PowerOff,
+                variant: project.status === 'suspended' ? 'default' : 'destructive',
+                onClick: () => {
+                  if (window.confirm(`Are you sure you want to ${project.status === 'suspended' ? 'reactivate' : 'suspend'} this project?`)) {
+                    suspendProject(project.id).catch(console.error);
+                  }
+                },
+              }
+            ]}
+          />
+        ) : (
+          <Button variant="ghost" size="icon" className="-mr-2 -mt-2 text-gray-400">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
     </CardHeader>
 
     <CardContent>

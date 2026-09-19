@@ -362,7 +362,7 @@ export function useProjectFloors(projectId: string) {
     return useQuery({
         queryKey: ['project-floors', projectId],
         queryFn: async () => {
-            const response = await apiClient.get<any>(API_ENDPOINTS.PROJECTS.FLOORS(projectId));
+            const response = await apiClient.get<any>(`/admin/projects/${projectId}/floor-plan`);
             const data = unwrap(response.data);
             return Array.isArray(data) ? data : [];
         },
@@ -831,6 +831,27 @@ export function useDeleteProject() {
     return {
         deleteProject: mutation.mutateAsync,
         isDeleting: mutation.isPending,
+        error: mutation.error,
+    };
+}
+
+export function useSuspendProject() {
+    const queryClient = useQueryClient();
+
+    const mutation = useMutation({
+        mutationFn: async (id: string) => {
+            const response = await apiClient.patch(`/super-admin/projects/${id}/suspend`);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['projects'] });
+            queryClient.invalidateQueries({ queryKey: ['project'] });
+        },
+    });
+
+    return {
+        suspendProject: mutation.mutateAsync,
+        isSuspending: mutation.isPending,
         error: mutation.error,
     };
 }

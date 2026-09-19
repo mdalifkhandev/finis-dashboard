@@ -91,7 +91,7 @@ export interface Project {
     sections?: string[];
   };
   description: string;
-  status: 'planning' | 'completed' | 'active' | 'delayed';
+  status: 'planning' | 'completed' | 'active' | 'delayed' | 'suspended' | 'on_hold';
   priority?: string | null;
   startDate: string;
   endDate?: string;

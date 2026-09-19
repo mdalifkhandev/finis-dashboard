@@ -9,6 +9,7 @@ import { Modal } from '@/shared/components/ui/Modal';
 import { ProjectTeam } from '../components/ProjectTeam';
 import { ProjectDocuments } from '../components/ProjectDocuments';
 import { ProjectStructure } from '../components/ProjectStructure';
+import { ProjectTasks } from '../components/ProjectTasks';
 import { ProjectReportView } from '../components/ProjectReportView';
 import { FinancialAnalysisChart } from '../components/FinancialAnalysisChart';
 import { CreateProjectModal } from '../components/CreateProjectModal';
@@ -112,6 +113,7 @@ export function ProjectDetailPage() {
   const tabs: { id: string, label: string, count?: number }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'scope_structure', label: 'Scope & Structure' },
+    { id: 'tasks', label: 'Tasks', count: taskCount || undefined },
     { id: 'documents', label: 'Documents' }
   ];
   if (!isSuperAdmin) {
@@ -476,6 +478,8 @@ export function ProjectDetailPage() {
         {activeTab === 'scope_structure' && (
           <ProjectStructure projectType={project.type as any} initialFloors={structureFloors as any} />
         )}
+
+        {activeTab === 'tasks' && <ProjectTasks />}
 
         {!isSuperAdmin && activeTab === 'team' && <ProjectTeam />}
         {activeTab === 'documents' && <ProjectDocuments />}
