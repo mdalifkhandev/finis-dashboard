@@ -222,6 +222,28 @@ export function useReviewSubTaskApproval() {
     };
 }
 
+export function useReviewSubTaskReport() {
+    const queryClient = useQueryClient();
+
+    const mutation = useMutation({
+        mutationFn: async ({ subTaskId, data }: { subTaskId: string; data: any }) => {
+            const response = await apiClient.put<any>(API_ENDPOINTS.TASKS.SUBTASK_REPORT_REVIEW(subTaskId), data);
+            return unwrap(response.data);
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['subtask', variables.subTaskId] });
+            queryClient.invalidateQueries({ queryKey: ['subtasks'] });
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            queryClient.invalidateQueries({ queryKey: ['project'] });
+        },
+    });
+
+    return {
+        reviewSubTaskReport: (subTaskId: string, data: any) => mutation.mutateAsync({ subTaskId, data }),
+        isReviewing: mutation.isPending,
+    };
+}
+
 export function useDeleteSubTask() {
     const queryClient = useQueryClient();
 

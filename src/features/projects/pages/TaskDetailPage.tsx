@@ -1,11 +1,27 @@
 import { useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { useTaskDetails, useSubTaskDetails, useReviewTaskApproval, useReviewSubTaskApproval, useDeleteSubTask, useReviewTaskCompletion } from '../hooks/useTasks';
+import { useTaskDetails, useSubTaskDetails, useReviewTaskApproval, useReviewSubTaskApproval, useReviewSubTaskReport, useDeleteSubTask, useReviewTaskCompletion } from '../hooks/useTasks';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Button } from '@/shared/components/ui/Button';
 import { ArrowLeft, Clock, MapPin, User, FileText, CheckCircle, XCircle, Trash2, Flag, AlertCircle, Image, DollarSign, Package } from 'lucide-react';
 import { format } from 'date-fns';
 import { ROUTES } from '@/config/routes';
+import { config } from '@/config/env';
+
+function resolveMediaUrl(url?: string | null) {
+    if (!url) return null;
+    if (/^(https?:|data:|blob:)/i.test(url)) return url;
+    return `${config.apiBaseUrl}/${url.replace(/^\/+/, '')}`;
+}
+
+function toArray<T = any>(value: T[] | T | null | undefined): T[] {
+    if (Array.isArray(value)) return value;
+    return value ? [value] : [];
+}
+
+function pickFirstText(...values: unknown[]) {
+    return values.find((value) => typeof value === 'string' && value.trim().length > 0) as string | undefined;
+}
 
 export function TaskDetailPage() {
     const { projectId, taskId } = useParams();
@@ -26,6 +42,7 @@ export function TaskDetailPage() {
 
     const { reviewTaskApproval, isReviewing: isReviewingTask } = useReviewTaskApproval();
     const { reviewSubTaskApproval, isReviewing: isReviewingSubTask } = useReviewSubTaskApproval();
+    const { reviewSubTaskReport, isReviewing: isReviewingSubTaskReport } = useReviewSubTaskReport();
     const { deleteSubTask, isDeletingSubTask } = useDeleteSubTask();
     const { reviewTaskCompletion, isReviewingCompletion } = useReviewTaskCompletion();
 
@@ -104,17 +121,25 @@ export function TaskDetailPage() {
     };
 
     const handleApproveCompletion = async () => {
-        if (!taskId || isSubtask) return;
+        if (!taskId) return;
         try {
-            await reviewTaskCompletion(taskId, { reviewDecision: 'approved', reviewDescription: completionNote || undefined });
+            if (isSubtask) {
+                await reviewSubTaskReport(taskId, { reviewDecision: 'approved', reviewDescription: completionNote || undefined });
+            } else {
+                await reviewTaskCompletion(taskId, { reviewDecision: 'approved', reviewDescription: completionNote || undefined });
+            }
             setCompletionNote('');
         } catch (err) { console.error(err); }
     };
 
     const handleRejectCompletion = async () => {
-        if (!taskId || isSubtask) return;
+        if (!taskId) return;
         try {
-            await reviewTaskCompletion(taskId, { reviewDecision: 'rejected', reviewDescription: completionNote || undefined });
+            if (isSubtask) {
+                await reviewSubTaskReport(taskId, { reviewDecision: 'rejected', reviewDescription: completionNote || undefined });
+            } else {
+                await reviewTaskCompletion(taskId, { reviewDecision: 'rejected', reviewDescription: completionNote || undefined });
+            }
             setCompletionNote('');
         } catch (err) { console.error(err); }
     };
@@ -124,15 +149,76 @@ export function TaskDetailPage() {
     const normalizedApprovalDecision = String(approvalDecision ?? '').toLowerCase().trim();
     const isPendingApproval = normalizedApprovalDecision === 'pending';
     const isApproved = normalizedApprovalDecision === 'approved';
-    const isAwaitingCompletionReview = !isSubtask && normalizedStatus === 'review';
+    const isAwaitingCompletionReview = normalizedStatus === 'review';
     const canReviewCompletion = isAwaitingCompletionReview;
+    const isReviewDecisionPending = isReviewingCompletion || isReviewingSubTaskReport;
     const isCompleted = normalizedStatus === 'completed';
 
-    const reports = data.reports ?? [];
-    const expenses = data.expenses ?? [];
-    const inventories = data.inventories ?? [];
-    const instructions = data.instructions ?? [];
+    const reports = (() => {
+        const existingReports = Array.isArray(data.reports) ? data.reports : [];
+        if (existingReports.length > 0) return existingReports;
+
+        const report = data.report ?? data.latestReport;
+        const photos = data.photos ?? {};
+        const beforePhotoUrl = report?.beforePhotoUrl ?? photos.beforePhotoUrl ?? null;
+        const afterPhotoUrl = report?.afterPhotoUrl ?? photos.afterPhotoUrl ?? null;
+        const receiptUrl = report?.receiptUrl ?? photos.receiptUrl ?? null;
+
+        if (!report && !beforePhotoUrl && !afterPhotoUrl && !receiptUrl) return [];
+
+        return [{
+            id: report?.id ?? `${data.id}-report`,
+            notes: report?.notes ?? data.reportSummary ?? null,
+            beforePhotoUrl,
+            afterPhotoUrl,
+            receiptUrl,
+        }];
+    })();
+    const expenseItems = toArray(data.expenses ?? data.taskExpenses ?? data.expense ?? data.latestExpense).map((expense: any) => ({
+        id: expense.id ?? `${expense.description ?? expense.title ?? 'expense'}-${expense.date ?? expense.createdAt ?? ''}`,
+        description: pickFirstText(expense.description, expense.title, expense.notes, expense.category) ?? 'Task expense',
+        category: pickFirstText(expense.category, expense.type) ?? 'General',
+        amount: Number(expense.amount ?? expense.totalAmount ?? expense.subtotal ?? expense.expenseAmount ?? 0),
+        status: pickFirstText(expense.status) ?? 'Recorded',
+        date: expense.date ?? expense.expenseDate ?? expense.createdAt ?? expense.updatedAt ?? null,
+        receiptUrl: expense.receiptUrl ?? expense.reviewAttachmentUrl ?? expense.attachmentUrl ?? null,
+    }));
+    const inventories = (data.inventories ?? data.inventoryUsed ?? data.taskInventories ?? []).map((item: any) => ({
+        id: item.id ?? item.inventoryId ?? item.inventory?.id,
+        label: item.label ?? item.name ?? item.inventory?.name ?? 'Inventory item',
+        quantity: item.quantity ?? item.qtyUsed ?? item.qty ?? 0,
+        unit: item.unit ?? item.inventory?.unit ?? '',
+    }));
+    const instructions = [
+        ...toArray(data.instructions ?? data.taskInstructions ?? data.instructionSteps).map((inst: any) => (
+            typeof inst === 'string'
+                ? inst
+                : pickFirstText(inst.text, inst.description, inst.title, inst.notes)
+        )),
+        pickFirstText(data.instruction, data.taskInstruction, data.reportSummary, data.report?.notes, data.latestReport?.notes),
+    ].filter((inst): inst is string => Boolean(inst));
     const units = data.taskUnits || data.subTaskUnits || data.units || [];
+    const assignedPeople = isSubtask
+        ? [
+            data.taskAssignee?.user,
+            data.assignee,
+            data.assignedUser,
+            data.creator?.role === 'worker' ? data.creator : null,
+        ]
+        : [
+            ...toArray(data.taskAssignees).map((assignee: any) => assignee?.user ?? assignee),
+            data.assignee,
+            data.assignedUser,
+            data.assignedToUser,
+            data.creator?.role === 'worker' ? data.creator : null,
+        ];
+    const assignedToLabel = Array.from(
+        new Set(
+            assignedPeople
+                .map((person: any) => pickFirstText(person?.fullName, person?.name, person?.email))
+                .filter((name): name is string => Boolean(name)),
+        ),
+    ).join(', ') || 'Unassigned';
 
     return (
         <div className="max-w-5xl mx-auto pb-16 space-y-5">
@@ -177,9 +263,7 @@ export function TaskDetailPage() {
                     <div>
                         <div className="text-xs text-gray-400 mb-1 flex items-center gap-1"><User className="w-3 h-3" /> Assigned To</div>
                         <div className="font-medium text-sm text-gray-800">
-                            {isSubtask
-                                ? (data.taskAssignee?.user?.fullName || data.taskAssignee?.user?.name || 'Unassigned')
-                                : (data.taskAssignees?.[0]?.user?.fullName || data.taskAssignees?.[0]?.user?.name || 'Unassigned')}
+                            {assignedToLabel}
                         </div>
                     </div>
                     <div>
@@ -207,35 +291,6 @@ export function TaskDetailPage() {
                 </div>
             </div>
 
-            {/* Step 2: Completion Review */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-indigo-100">
-                <div className="flex items-center gap-2 mb-4"><Flag className="w-5 h-5 text-indigo-500" /><h2 className="font-bold text-gray-900 text-lg">Completion Review</h2></div>
-                <div className={`${canReviewCompletion ? 'bg-indigo-50 border-indigo-200' : 'bg-gray-50 border-gray-200'} border rounded-xl p-4 mb-4`}>
-                    <p className={`font-semibold text-sm ${canReviewCompletion ? 'text-indigo-800' : 'text-gray-700'}`}>
-                        {canReviewCompletion ? 'Worker submitted this task for completion review' : 'Completion review is not available for this status'}
-                    </p>
-                    <p className={`text-sm mt-0.5 ${canReviewCompletion ? 'text-indigo-600' : 'text-gray-500'}`}>
-                        {canReviewCompletion ? 'Review the submitted work below and approve or request revision.' : 'Buttons stay visible here, but they unlock only when task status is review.'}
-                    </p>
-                </div>
-                <textarea
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 text-sm mb-4 resize-none disabled:bg-gray-50 disabled:text-gray-400"
-                    rows={3}
-                    placeholder="Add review notes (optional)..."
-                    value={completionNote}
-                    onChange={(e) => setCompletionNote(e.target.value)}
-                    disabled={!canReviewCompletion || isReviewingCompletion}
-                />
-                <div className="flex gap-3">
-                    <Button variant="outline" className="flex-1 border-red-200 text-red-600 hover:bg-red-50 font-semibold disabled:opacity-60" onClick={handleRejectCompletion} disabled={!canReviewCompletion || isReviewingCompletion}>
-                        <XCircle className="w-4 h-4 mr-2" />{isReviewingCompletion ? 'Processing...' : 'Revision'}
-                    </Button>
-                    <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold disabled:opacity-60" onClick={handleApproveCompletion} disabled={!canReviewCompletion || isReviewingCompletion}>
-                        <CheckCircle className="w-4 h-4 mr-2" />{isReviewingCompletion ? 'Processing...' : 'Approve Completion'}
-                    </Button>
-                </div>
-            </div>
-
             {/* Step 1: Creation Approval */}
             {isPendingApproval && !isAwaitingCompletionReview && (
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-amber-100">
@@ -257,12 +312,6 @@ export function TaskDetailPage() {
             )}
 
             {/* Status banners */}
-            {isCompleted && !isAwaitingCompletionReview && (
-                <div className="bg-green-50 rounded-2xl p-5 border border-green-200 flex items-center gap-3">
-                    <CheckCircle className="w-8 h-8 text-green-500 shrink-0" />
-                    <div><p className="font-semibold text-green-800">Task Completed</p><p className="text-sm text-green-600">This task has been approved and marked as complete.</p></div>
-                </div>
-            )}
             {isApproved && !isCompleted && !isAwaitingCompletionReview && (
                 <div className="bg-green-50 rounded-2xl p-4 border border-green-200 flex items-center gap-3">
                     <CheckCircle className="w-6 h-6 text-green-500 shrink-0" />
@@ -311,15 +360,15 @@ export function TaskDetailPage() {
                                 <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-xs font-medium text-gray-400 mb-2">Before Photo</p>
-                                        {report.beforePhotoUrl
-                                            ? <img src={report.beforePhotoUrl} alt="Before" className="w-full h-56 object-cover rounded-lg border border-gray-100" />
-                                            : <div className="w-full h-56 bg-gray-50 rounded-lg flex items-center justify-center text-gray-300 text-sm border border-dashed border-gray-200">No photo</div>}
+                                    {report.beforePhotoUrl
+                                        ? <img src={resolveMediaUrl(report.beforePhotoUrl) ?? undefined} alt="Before" className="w-full h-56 object-cover rounded-lg border border-gray-100" />
+                                        : <div className="w-full h-56 bg-gray-50 rounded-lg flex items-center justify-center text-gray-300 text-sm border border-dashed border-gray-200">No photo</div>}
                                     </div>
                                     <div>
                                         <p className="text-xs font-medium text-gray-400 mb-2">After Photo</p>
-                                        {report.afterPhotoUrl
-                                            ? <img src={report.afterPhotoUrl} alt="After" className="w-full h-56 object-cover rounded-lg border border-gray-100" />
-                                            : <div className="w-full h-56 bg-gray-50 rounded-lg flex items-center justify-center text-gray-300 text-sm border border-dashed border-gray-200">No photo</div>}
+                                    {report.afterPhotoUrl
+                                        ? <img src={resolveMediaUrl(report.afterPhotoUrl) ?? undefined} alt="After" className="w-full h-56 object-cover rounded-lg border border-gray-100" />
+                                        : <div className="w-full h-56 bg-gray-50 rounded-lg flex items-center justify-center text-gray-300 text-sm border border-dashed border-gray-200">No photo</div>}
                                     </div>
                                 </div>
                             </div>
@@ -338,18 +387,30 @@ export function TaskDetailPage() {
                 <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                     <DollarSign className="w-5 h-5 text-gray-400" /> Task Expenses
                 </h2>
-                {expenses.length > 0 ? (
+                {expenseItems.length > 0 ? (
                     <div className="space-y-3">
-                        {expenses.map((expense: any) => (
+                        {expenseItems.map((expense: any) => (
                             <div key={expense.id} className="p-4 rounded-xl border border-gray-100 bg-gray-50 flex justify-between items-center gap-4">
                                 <div>
                                     <div className="flex items-center gap-2 mb-0.5">
                                         <span className="font-semibold text-sm text-gray-900">{expense.description}</span>
                                         <Badge variant="success" className="text-[10px] py-0">{expense.status}</Badge>
                                     </div>
-                                    <div className="text-xs text-gray-400">{expense.category} - {format(new Date(expense.date), 'MMM d, yyyy')}</div>
+                                    <div className="text-xs text-gray-400">
+                                        {expense.category} - {expense.date ? format(new Date(expense.date), 'MMM d, yyyy') : 'No date'}
+                                    </div>
+                                    {expense.receiptUrl && (
+                                        <a
+                                            href={resolveMediaUrl(expense.receiptUrl) ?? undefined}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-xs font-medium text-blue-600 hover:underline"
+                                        >
+                                            View receipt
+                                        </a>
+                                    )}
                                 </div>
-                                <div className="text-lg font-bold text-blue-600 shrink-0">${expense.amount?.toFixed(2)}</div>
+                                <div className="text-lg font-bold text-blue-600 shrink-0">${Number(expense.amount || 0).toFixed(2)}</div>
                             </div>
                         ))}
                     </div>
@@ -376,7 +437,9 @@ export function TaskDetailPage() {
                                 {inventories.map((inv: any, idx: number) => (
                                     <tr key={idx}>
                                         <td className="px-4 py-3 text-gray-800">{inv.label}</td>
-                                        <td className="px-4 py-3 font-medium text-gray-800">{inv.quantity}</td>
+                                        <td className="px-4 py-3 font-medium text-gray-800">
+                                            {inv.quantity}{inv.unit ? ` ${inv.unit}` : ''}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -384,6 +447,44 @@ export function TaskDetailPage() {
                     </div>
                 ) : (
                     <p className="text-gray-400 text-sm">No inventory used for this task.</p>
+                )}
+            </div>
+
+            {/* Completion Review */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-indigo-100">
+                <div className="flex items-center gap-2 mb-4"><Flag className="w-5 h-5 text-indigo-500" /><h2 className="font-bold text-gray-900 text-lg">Completion Review</h2></div>
+                <div className={`${canReviewCompletion ? 'bg-indigo-50 border-indigo-200' : 'bg-gray-50 border-gray-200'} border rounded-xl p-4 mb-4`}>
+                    <p className={`font-semibold text-sm ${canReviewCompletion ? 'text-indigo-800' : 'text-gray-700'}`}>
+                        {canReviewCompletion ? 'Worker submitted this task for completion review' : 'Completion review is not available for this status'}
+                    </p>
+                    <p className={`text-sm mt-0.5 ${canReviewCompletion ? 'text-indigo-600' : 'text-gray-500'}`}>
+                        {canReviewCompletion ? 'Review the submitted work above and approve or request revision.' : 'Buttons stay visible here, but they unlock only when task status is review.'}
+                    </p>
+                </div>
+                <textarea
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 text-sm mb-4 resize-none disabled:bg-gray-50 disabled:text-gray-400"
+                    rows={3}
+                    placeholder="Add review notes (optional)..."
+                    value={completionNote}
+                    onChange={(e) => setCompletionNote(e.target.value)}
+                    disabled={!canReviewCompletion || isReviewDecisionPending}
+                />
+                <div className="flex gap-3">
+                    <Button variant="outline" className="flex-1 border-red-200 text-red-600 hover:bg-red-50 font-semibold disabled:opacity-60" onClick={handleRejectCompletion} disabled={!canReviewCompletion || isReviewDecisionPending}>
+                        <XCircle className="w-4 h-4 mr-2" />{isReviewDecisionPending ? 'Processing...' : 'Revision'}
+                    </Button>
+                    <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold disabled:opacity-60" onClick={handleApproveCompletion} disabled={!canReviewCompletion || isReviewDecisionPending}>
+                        <CheckCircle className="w-4 h-4 mr-2" />{isReviewDecisionPending ? 'Processing...' : 'Approve Completion'}
+                    </Button>
+                </div>
+                {isCompleted && !isAwaitingCompletionReview && (
+                    <div className="bg-green-50 rounded-xl p-5 border border-green-200 flex items-center gap-3 mt-4">
+                        <CheckCircle className="w-8 h-8 text-green-500 shrink-0" />
+                        <div>
+                            <p className="font-semibold text-green-800">Task Completed</p>
+                            <p className="text-sm text-green-600">This task has been approved and marked as complete.</p>
+                        </div>
+                    </div>
                 )}
             </div>
 
