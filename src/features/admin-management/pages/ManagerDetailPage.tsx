@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
     Mail, Phone, ChevronLeft,
-    Briefcase, ShieldCheck, ExternalLink,
+    Briefcase, ShieldCheck, ExternalLink, Trash2,
 } from 'lucide-react';
+import { useRemoveTeamMember } from '@/features/projects/hooks';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Tabs } from '@/shared/components/ui/Tabs';
@@ -23,7 +24,10 @@ export function ManagerDetailPage() {
         data: manager,
         isLoading,
         isError,
+        refetch,
     } = useGetAdminDetailQuery(id!, { skip: !id });
+
+    const { removeMember, isRemoving } = useRemoveTeamMember();
 
     const [updateUserStatus, { isLoading: updatingStatus }] =
         useUpdateUserStatusMutation();
@@ -35,6 +39,16 @@ export function ManagerDetailPage() {
             await updateUserStatus({ id: manager.id, status: newStatus }).unwrap();
         } catch (err) {
             console.error('Status update failed:', err);
+        }
+    };
+
+    const handleRemoveFromProject = async (projectId: string) => {
+        if (!window.confirm('Are you sure you want to remove this manager from this project?')) return;
+        try {
+            await removeMember({ projectId, userId: manager!.id });
+            await refetch();
+        } catch (err) {
+            console.error('Failed to remove manager from project:', err);
         }
     };
 
@@ -243,12 +257,23 @@ export function ManagerDetailPage() {
                                                         {item.project.progress ?? 0}%
                                                     </span>
                                                 </div>
-                                                <Link
-                                                    to={`/projects/${item.project.id}`}
-                                                    className="text-xs font-black text-blue-600 hover:text-blue-700 flex items-center gap-1 uppercase tracking-widest"
-                                                >
-                                                    View Site <ExternalLink className="h-3 w-3" />
-                                                </Link>
+                                                <div className="flex items-center gap-4">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                                                        onClick={() => handleRemoveFromProject(item.project.id)}
+                                                        disabled={isRemoving}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                    <Link
+                                                        to={`/projects/${item.project.id}`}
+                                                        className="text-xs font-black text-blue-600 hover:text-blue-700 flex items-center gap-1 uppercase tracking-widest"
+                                                    >
+                                                        View Site <ExternalLink className="h-3 w-3" />
+                                                    </Link>
+                                                </div>
                                             </div>
                                         </div>
                                     </Card>

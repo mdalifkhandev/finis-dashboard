@@ -300,9 +300,6 @@ function ManagerTable({
                             {row.status === 'active' ? 'Disable' : 'Enable'}
                         </Button>
                     )}
-                    <Button size="sm" variant="ghost">
-                        <MoreVertical className="w-4 h-4" />
-                    </Button>
                 </div>
             ),
         },
