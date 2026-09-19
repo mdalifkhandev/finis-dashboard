@@ -236,7 +236,7 @@ export function ProjectDetailPage() {
                 <StatCard
                   title="Budget Used"
                   value={project.spent && project.budget ? Math.round((project.spent / project.budget) * 100) : 0}
-                  trend={-2.4}
+                  trend={0}
                   icon={DollarSign}
                   color="text-blue-600"
                   bgGradient="bg-gradient-to-br from-blue-50/50 to-transparent"
@@ -245,7 +245,8 @@ export function ProjectDetailPage() {
               <StatCard
                 title="Sub-Tasks"
                 value={taskCount}
-                trend={12.5}
+                isCount={true}
+                trend={0}
                 icon={CheckSquare}
                 color="text-green-600"
                 bgGradient="bg-gradient-to-br from-green-50/50 to-transparent"
@@ -253,7 +254,8 @@ export function ProjectDetailPage() {
               <StatCard
                 title="Team Members"
                 value={teamCount}
-                trend={5.2}
+                isCount={true}
+                trend={0}
                 icon={Users}
                 color="text-primary"
                 bgGradient="bg-gradient-to-br from-blue-50/50 to-transparent"
@@ -476,7 +478,7 @@ export function ProjectDetailPage() {
         )}
 
         {activeTab === 'scope_structure' && (
-          <ProjectStructure projectType={project.type as any} initialFloors={structureFloors as any} />
+          <ProjectStructure projectType={project.type as any} initialFloors={structureFloors as any} analysisData={analysisData} />
         )}
 
         {activeTab === 'tasks' && <ProjectTasks />}

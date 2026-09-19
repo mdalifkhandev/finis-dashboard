@@ -7,31 +7,44 @@ import type { Floor } from '@/shared/types';
 interface ProjectStructureProps {
   projectType?: 'apartment_building' | 'house';
   initialFloors?: Floor[];
+  analysisData?: any;
 }
 
-export function ProjectStructure({ projectType = 'apartment_building', initialFloors = [] }: ProjectStructureProps) {
+export function ProjectStructure({ projectType = 'apartment_building', initialFloors = [], analysisData }: ProjectStructureProps) {
   const isHouse = projectType === 'house';
   const sectionsLabel = isHouse ? 'Sections' : 'Floors';
   const structureLabel = isHouse ? 'House' : 'Building';
   const locationLabel = isHouse ? 'Sections' : 'Units';
 
-  const totalFloors = initialFloors.length;
-  const totalRooms = initialFloors.reduce((sum, floor) => sum + (floor.rooms?.length ?? 0), 0);
-  const totalTasks = initialFloors.reduce(
-    (sum, floor) =>
-      sum + (floor.tasks?.length ?? 0) + (floor.rooms?.reduce((roomSum, room) => roomSum + (room.tasks?.length ?? 0), 0) ?? 0),
-    0,
-  );
-  const completedTasks = initialFloors.reduce(
-    (sum, floor) =>
-      sum +
-      (floor.tasks?.filter((task) => task.status === 'completed').length ?? 0) +
-      (floor.rooms?.reduce(
-        (roomSum, room) => roomSum + (room.tasks?.filter((task) => task.status === 'completed').length ?? 0),
+  const checklist = analysisData?.checklist ?? [];
+  const hasAnalysis = checklist.length > 0;
+
+  const totalFloors = initialFloors.length || checklist.length;
+  
+  const totalRooms = hasAnalysis
+    ? checklist.reduce((sum: number, item: any) => sum + (item.totalUnits || 0), 0)
+    : initialFloors.reduce((sum, floor) => sum + (floor.rooms?.length ?? 0), 0);
+
+  const totalTasks = hasAnalysis
+    ? checklist.reduce((sum: number, item: any) => sum + (item.taskCounts?.total || item.tasks?.length || 0), 0)
+    : initialFloors.reduce(
+        (sum, floor) => sum + (floor.tasks?.length ?? 0) + (floor.rooms?.reduce((roomSum, room) => roomSum + (room.tasks?.length ?? 0), 0) ?? 0),
         0,
-      ) ?? 0),
-    0,
-  );
+      );
+
+  const completedTasks = hasAnalysis
+    ? checklist.reduce((sum: number, item: any) => sum + (item.taskCounts?.completed || 0), 0)
+    : initialFloors.reduce(
+        (sum, floor) =>
+          sum +
+          (floor.tasks?.filter((task) => task.status === 'completed').length ?? 0) +
+          (floor.rooms?.reduce(
+            (roomSum, room) => roomSum + (room.tasks?.filter((task) => task.status === 'completed').length ?? 0),
+            0,
+          ) ?? 0),
+        0,
+      );
+      
   const overallProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
@@ -135,19 +148,29 @@ export function ProjectStructure({ projectType = 'apartment_building', initialFl
         </Card>
       ) : (
         <div className="space-y-4">
-          {initialFloors.map((floor, index) => {
-            const roomCount = floor.rooms?.length ?? 0;
-            const taskCount =
-              (floor.tasks?.length ?? 0) +
-              (floor.rooms?.reduce((sum, room) => sum + (room.tasks?.length ?? 0), 0) ?? 0);
-            const completed = (floor.tasks?.filter((task) => task.status === 'completed').length ?? 0) +
-              (floor.rooms?.reduce(
-                (sum, room) => sum + (room.tasks?.filter((task) => task.status === 'completed').length ?? 0),
-                0,
-              ) ?? 0);
+          {(hasAnalysis ? checklist : initialFloors).map((item: any, index: number) => {
+            const isChecklist = hasAnalysis;
+            const floor = isChecklist ? item : item;
+            
+            const roomCount = isChecklist ? (item.totalUnits || 0) : (floor.rooms?.length ?? 0);
+            
+            const taskCount = isChecklist 
+              ? (item.taskCounts?.total || item.tasks?.length || 0)
+              : (floor.tasks?.length ?? 0) + (floor.rooms?.reduce((sum: number, room: any) => sum + (room.tasks?.length ?? 0), 0) ?? 0);
+              
+            const completed = isChecklist
+              ? (item.taskCounts?.completed || 0)
+              : (floor.tasks?.filter((task: any) => task.status === 'completed').length ?? 0) +
+                (floor.rooms?.reduce(
+                  (sum: number, room: any) => sum + (room.tasks?.filter((task: any) => task.status === 'completed').length ?? 0),
+                  0,
+                ) ?? 0);
+
+            const floorId = isChecklist ? item.floorId : floor.id;
+            const floorName = isChecklist ? item.floorName : floor.name;
 
             return (
-              <Card key={floor.id} className="border-gray-100 shadow-sm overflow-hidden">
+              <Card key={floorId} className="border-gray-100 shadow-sm overflow-hidden">
                 <CardHeader className="bg-gray-50/50 border-b border-gray-100">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
@@ -156,7 +179,7 @@ export function ProjectStructure({ projectType = 'apartment_building', initialFl
                       </div>
                       <div>
                         <CardTitle className="text-base font-bold text-gray-900">
-                          {floor.name || `${isHouse ? 'Section' : 'Floor'} ${index + 1}`}
+                          {floorName || `${isHouse ? 'Section' : 'Floor'} ${index + 1}`}
                         </CardTitle>
                         <p className="text-xs text-gray-500">
                           {roomCount} units • {taskCount} sub-tasks
@@ -202,9 +225,9 @@ export function ProjectStructure({ projectType = 'apartment_building', initialFl
                       <div className="space-y-3">
                         <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Units</p>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                          {floor.rooms.map((room) => {
+                          {floor.rooms.map((room: any) => {
                             const roomTasks = room.tasks?.length ?? 0;
-                            const roomCompleted = room.tasks?.filter((task) => task.status === 'completed').length ?? 0;
+                            const roomCompleted = room.tasks?.filter((task: any) => task.status === 'completed').length ?? 0;
                             const roomProgress = roomTasks > 0 ? Math.round((roomCompleted / roomTasks) * 100) : 0;
 
                             return (
