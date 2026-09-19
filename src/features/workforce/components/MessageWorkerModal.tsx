@@ -3,7 +3,8 @@ import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { Label } from '@/shared/components/ui/Label';
 import { Textarea } from '@/shared/components/ui/Textarea';
-import { Mail, Send } from 'lucide-react';
+import { Mail, Send, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 interface MessageWorkerModalProps {
     isOpen: boolean;
@@ -12,9 +13,16 @@ interface MessageWorkerModalProps {
 }
 
 export function MessageWorkerModal({ isOpen, onClose, workerName }: MessageWorkerModalProps) {
-    const handleSubmit = (e: React.FormEvent) => {
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsLoading(true);
+        // Simulate API call for sending message
+        await new Promise(resolve => setTimeout(resolve, 1000));
         console.log('Sending message to', workerName);
+        alert(`Message sent successfully to ${workerName}!`);
+        setIsLoading(false);
         onClose();
     };
 
@@ -60,12 +68,12 @@ export function MessageWorkerModal({ isOpen, onClose, workerName }: MessageWorke
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-6 border-t border-gray-50">
-                    <Button type="button" variant="ghost" onClick={onClose} className="px-6 font-bold text-gray-400 hover:text-gray-600">
+                <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                    <Button type="button" variant="outline" onClick={onClose} className="h-12 px-6 rounded-xl font-bold">
                         Cancel
                     </Button>
-                    <Button type="submit" className="px-8 bg-[#1D4F6D] hover:bg-[#163a50] text-white shadow-lg transition-all gap-2 font-bold">
-                        <Send className="h-4 w-4" />
+                    <Button type="submit" className="h-12 px-8 rounded-xl bg-[#1D4F6D] hover:bg-[#1D4F6D]/90 text-white font-bold gap-2" disabled={isLoading}>
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                         Send Message
                     </Button>
                 </div>

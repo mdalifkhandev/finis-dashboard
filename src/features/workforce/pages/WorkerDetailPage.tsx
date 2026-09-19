@@ -26,39 +26,61 @@ export function WorkerDetailPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const workers = useAppSelector((state) => state.workforce.workers);
-  const [worker, setWorker] = useState<any>(() => workers.find(w => w.id === id || w.memberId === id) || null);
+  const [worker, setWorker] = useState<any>(() => {
+    const fromStore = workers.find(w => w.id === id || w.memberId === id);
+    if (fromStore) {
+      return {
+        ...fromStore,
+        name: fromStore.fullName || 'Worker',
+        role: fromStore.role || 'Worker',
+        avatar: fromStore.avatarUrl,
+        status: fromStore.status || 'active',
+      };
+    }
+    return null;
+  });
   const [isLoading, setIsLoading] = useState(!worker);
 
   useEffect(() => {
     if (!id) return;
     const fromStore = workers.find(w => w.id === id || w.memberId === id);
-    if (fromStore) {
-      setWorker({
+    
+    // Only set fromStore if we don't have a worker yet, or if we haven't fetched full details
+    setWorker((prev: any) => {
+      if (prev && prev.dateOfBirth) return prev; // Keep full details if already fetched
+      return fromStore ? {
+        ...prev,
         ...fromStore,
-        name: fromStore.fullName,
+        name: fromStore.fullName || 'Worker',
         role: fromStore.role || 'Worker',
         avatar: fromStore.avatarUrl,
         status: fromStore.status || 'active',
-      });
-      setIsLoading(false);
-      return;
-    }
+      } : prev;
+    });
+
+    if (fromStore && isLoading) setIsLoading(false);
+
     void (async () => {
-      setIsLoading(true);
+      if (!fromStore && !worker) setIsLoading(true);
       try {
-        const res = await apiClient.get<any>(`/super_admin/team/users/${id}`);
-        const data = res?.data || res;
+        // Find the actual user ID. If id is memberId, fromStore.id is the User ID.
+        const userIdToFetch = fromStore?.id || id;
+        const res = await apiClient.get<any>(`/super_admin/team/users/${userIdToFetch}`);
+        const data = res?.data?.data || res?.data || res;
+        
         if (data) {
-          setWorker({
+          setWorker((prev: any) => ({
+            ...prev,
             ...data,
             name: data.fullName || data.name || 'Worker',
             role: data.role || 'Worker',
             avatar: data.avatarUrl || data.avatar,
             status: data.status || 'active',
-          });
+            assignedProject: data.projects?.[0]?.project?.name || prev?.assignedProject,
+          }));
         }
-      } catch {
-        // Handled
+      } catch (error) {
+        console.error("Failed to fetch worker details", error);
       } finally {
         setIsLoading(false);
       }
@@ -192,7 +214,7 @@ export function WorkerDetailPage() {
                     </div>
                     <div className="space-y-1.5">
                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Date of Birth</p>
-                      <p className="font-bold text-gray-900 text-lg">May 15, 1985</p>
+                      <p className="font-bold text-gray-900 text-lg">{worker.dateOfBirth ? formatDate(worker.dateOfBirth) : 'Not provided'}</p>
                     </div>
                     <div className="space-y-1.5">
                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Employment Role</p>
@@ -201,13 +223,13 @@ export function WorkerDetailPage() {
                     <div className="space-y-1.5">
                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Hourly Compensation</p>
                       <p className="font-bold text-blue-600 text-lg px-3 py-1 bg-blue-50 rounded-lg inline-block">
-                        ${worker.hourlyRate}/hr
+                        ${worker.hourlyRate || '0'}/hr
                       </p>
                     </div>
                     <div className="sm:col-span-2 space-y-1.5">
                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Primary Residence</p>
                       <p className="font-bold text-gray-900 leading-relaxed text-lg">
-                        1234 Oak Avenue, Apartment 4B, Los Angeles, CA 90001
+                        {worker.address || 'Not provided'}
                       </p>
                     </div>
                   </CardContent>
@@ -218,18 +240,26 @@ export function WorkerDetailPage() {
                     <CardTitle className="text-base font-black text-[#1D4F6D] uppercase tracking-widest">Emergency Contact</CardTitle>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-6">
-                    <div className="space-y-1.5">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact Name</p>
-                      <p className="font-bold text-gray-900 text-lg">Kyle Reese</p>
-                    </div>
-                    <div className="space-y-1.5">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Relationship</p>
-                      <p className="font-bold text-gray-900 text-lg">Spouse</p>
-                    </div>
-                    <div className="space-y-1.5">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Phone Number</p>
-                      <p className="font-bold text-gray-900 text-lg">+1 (555) 987-6543</p>
-                    </div>
+                    {worker.emergencyContacts && worker.emergencyContacts.length > 0 ? (
+                      <>
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact Name</p>
+                          <p className="font-bold text-gray-900 text-lg">{worker.emergencyContacts[0].name}</p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Relationship</p>
+                          <p className="font-bold text-gray-900 text-lg">{worker.emergencyContacts[0].relation}</p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Phone Number</p>
+                          <p className="font-bold text-gray-900 text-lg">{worker.emergencyContacts[0].phone}</p>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="sm:col-span-2">
+                        <p className="text-gray-500 font-medium">No emergency contact provided.</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -246,7 +276,7 @@ export function WorkerDetailPage() {
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mobile</p>
-                        <p className="text-sm font-bold text-gray-900 mt-0.5">{worker.phone}</p>
+                        <p className="font-bold text-gray-900">{worker.phone || 'Not provided'}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-xl">
@@ -255,7 +285,7 @@ export function WorkerDetailPage() {
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email</p>
-                        <p className="text-sm font-bold text-gray-900 mt-0.5">{worker.email}</p>
+                        <p className="font-bold text-gray-900">{worker.email || 'Not provided'}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -266,37 +296,31 @@ export function WorkerDetailPage() {
                     <CardTitle className="text-base font-black text-[#1D4F6D] uppercase tracking-widest">Certifications</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3 pt-6">
-                    <div className="flex items-center justify-between p-4 bg-[#10B981]/5 border border-[#10B981]/10 rounded-xl group hover:bg-[#10B981]/10 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-xl bg-[#10B981] flex items-center justify-center text-white font-black text-xs">
-                          PM
+                    {worker.certifications && worker.certifications.length > 0 ? (
+                      worker.certifications.map((cert: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between p-4 bg-[#10B981]/5 border border-[#10B981]/10 rounded-xl group hover:bg-[#10B981]/10 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-xl bg-[#10B981] flex items-center justify-center text-white font-black text-xs">
+                              {cert.name.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-gray-900">{cert.name}</p>
+                              <p className="text-[10px] font-bold text-gray-400 uppercase">Expires: {cert.expiresAt ? formatDate(cert.expiresAt) : 'N/A'}</p>
+                            </div>
+                          </div>
+                          <Badge variant={cert.status === 'active' ? 'success' : 'secondary'} className="font-bold">{cert.status?.toUpperCase() || 'ACTIVE'}</Badge>
                         </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">PMP Certified</p>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase">Expires: Dec 2025</p>
-                        </div>
-                      </div>
-                      <Badge variant="success" className="font-bold">ACTIVE</Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-[#6366F1]/5 border border-[#6366F1]/10 rounded-xl group hover:bg-[#6366F1]/10 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-xl bg-[#6366F1] flex items-center justify-center text-white font-black text-xs">
-                          SS
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">Site Safety Plus</p>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase">Expires: Jun 2025</p>
-                        </div>
-                      </div>
-                      <Badge variant="success" className="font-bold">ACTIVE</Badge>
-                    </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 font-medium">No certifications provided.</p>
+                    )}
                   </CardContent>
                 </Card>
               </div>
             </div>
           )}
 
-          {activeTab === 'schedule' && <WorkerSchedule />}
+          {activeTab === 'schedule' && <WorkerSchedule worker={worker} />}
           {activeTab === 'attendance' && <AttendanceCalendar />}
           {activeTab === 'payroll' && <PayrollHistory />}
           {activeTab === 'documents' && <WorkerDocuments />}

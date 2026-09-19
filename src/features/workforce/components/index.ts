@@ -8,3 +8,4 @@ export * from './WorkerFilters';
 export * from './WorkerSchedule';
 export * from './WorkerStats';
 export * from './WorkerTable';
+export * from './AssignShiftModal';

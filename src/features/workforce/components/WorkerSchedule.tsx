@@ -2,17 +2,24 @@ import { Card, CardContent } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { Calendar as CalendarIcon, Clock, MapPin, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/Badge';
+import { useState } from 'react';
+import { AssignShiftModal } from './AssignShiftModal';
 
 const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const shifts = [
-    { day: 'Mon', date: 'Oct 23', start: '08:00', end: '16:00', project: 'Skyline Tower', role: 'Site Manager', status: 'completed' },
-    { day: 'Tue', date: 'Oct 24', start: '08:00', end: '16:00', project: 'Skyline Tower', role: 'Site Manager', status: 'completed' },
-    { day: 'Wed', date: 'Oct 25', start: '08:00', end: '16:00', project: 'Skyline Tower', role: 'Site Manager', status: 'upcoming' },
-    { day: 'Thu', date: 'Oct 26', start: '08:00', end: '16:00', project: 'Lakeside Towers', role: 'Consultant', status: 'upcoming' },
-    { day: 'Fri', date: 'Oct 27', start: '08:00', end: '16:00', project: 'Lakeside Towers', role: 'Consultant', status: 'upcoming' },
-];
 
-export function WorkerSchedule() {
+export function WorkerSchedule({ worker }: { worker?: any }) {
+    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+
+    const shifts = worker?.workScheduleAssignments?.flatMap((assignment: any) => {
+        return assignment.schedule?.days?.map((d: string) => ({
+            day: d.charAt(0).toUpperCase() + d.slice(1),
+            start: assignment.schedule.startTime,
+            end: assignment.schedule.endTime,
+            project: assignment.schedule.name,
+            role: worker.role || 'Worker',
+            status: 'upcoming'
+        })) || [];
+    }) || [];
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -29,7 +36,10 @@ export function WorkerSchedule() {
                     </Button>
                 </div>
 
-                <Button className="gap-2 bg-[#1D4F6D] hover:bg-[#163a50] text-white shadow-md font-bold px-6 h-11">
+                <Button 
+                    onClick={() => setIsAssignModalOpen(true)}
+                    className="gap-2 bg-[#1D4F6D] hover:bg-[#163a50] text-white shadow-md font-bold px-6 h-11"
+                >
                     <Plus className="h-4 w-4" />
                     Assign New Shift
                 </Button>
@@ -43,7 +53,7 @@ export function WorkerSchedule() {
                             <p className="text-lg font-bold text-[#1D4F6D]">{23 + i}</p>
                         </div>
 
-                        {shifts.filter(s => s.day === day).map((shift, idx) => (
+                        {shifts.filter((s: any) => s.day === day).map((shift: any, idx: number) => (
                             <Card key={idx} className={`border-l-4 ${shift.status === 'completed' ? 'border-l-green-500' : 'border-l-blue-500'} shadow-sm overflow-hidden group hover:shadow-md transition-all cursor-pointer`}>
                                 <CardContent className="p-3 space-y-3">
                                     <div className="flex items-center justify-between">
@@ -70,7 +80,7 @@ export function WorkerSchedule() {
                             </Card>
                         ))}
 
-                        {shifts.filter(s => s.day === day).length === 0 && (
+                        {shifts.filter((s: any) => s.day === day).length === 0 && (
                             <div className="h-32 rounded-xl border border-dashed border-gray-200 flex flex-col items-center justify-center gap-2 bg-gray-50/50">
                                 <p className="text-[10px] font-bold text-gray-300 uppercase tracking-tighter">Off Day</p>
                             </div>
@@ -78,6 +88,12 @@ export function WorkerSchedule() {
                     </div>
                 ))}
             </div>
+
+            <AssignShiftModal 
+                isOpen={isAssignModalOpen} 
+                onClose={() => setIsAssignModalOpen(false)} 
+                worker={worker} 
+            />
         </div>
     );
 }

@@ -143,7 +143,10 @@ export function WorkforcePage() {
   }, [selectedProjectId]);
 
   const combinedWorkers = useMemo(() => {
-    const pendingWorkerItems: ProjectTeamMember[] = pendingInvitations.map((inv: PendingInvitation) => ({
+    const currentProject = projects.find((p: any) => p.id === selectedProjectId);
+    const projectName = currentProject?.name;
+
+    const pendingWorkerItems: any[] = pendingInvitations.map((inv: PendingInvitation) => ({
       memberId: inv.id,
       id: inv.id,
       fullName: inv.email ? inv.email.split('@')[0] : (inv.phone || 'Invited Worker'),
@@ -154,13 +157,16 @@ export function WorkforcePage() {
       status: 'pending',
       department: null,
       managerId: null,
+      projectName,
     }));
 
     const existingEmails = new Set(workers.map((w: ProjectTeamMember) => (w.email || '').toLowerCase()));
     const newPending = pendingWorkerItems.filter((p) => !p.email || !existingEmails.has(p.email.toLowerCase()));
 
-    return [...workers, ...newPending];
-  }, [workers, pendingInvitations]);
+    const workersWithProject = workers.map(w => ({ ...w, projectName }));
+
+    return [...workersWithProject, ...newPending];
+  }, [workers, pendingInvitations, projects, selectedProjectId]);
 
   const filteredWorkers = useMemo(() => {
     return combinedWorkers.filter(worker => {
@@ -372,7 +378,7 @@ export function WorkforcePage() {
           return (
             <Card className="overflow-hidden border-gray-100 shadow-sm opacity-80">
               <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
-                <h3 className="font-bold text-gray-500 uppercase tracking-wider text-xs px-2">Unassigned Workers</h3>
+                <h3 className="font-bold text-gray-500 uppercase tracking-wider text-xs px-2">Workers without Manager</h3>
               </div>
               <div className="p-0 overflow-x-auto">
                 <WorkerTable data={unassignedWorkers} />

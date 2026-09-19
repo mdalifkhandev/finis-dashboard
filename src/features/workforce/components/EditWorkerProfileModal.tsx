@@ -2,9 +2,11 @@ import { Modal } from '@/shared/components/ui/Modal';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { Label } from '@/shared/components/ui/Label';
-import { User, Save, Upload } from 'lucide-react';
+import { User, Save, Upload, Loader2 } from 'lucide-react';
 import { Worker } from '@/shared/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/Avatar';
+import { useState } from 'react';
+import { apiClient } from '@/services';
 
 interface EditWorkerProfileModalProps {
     isOpen: boolean;
@@ -13,10 +15,32 @@ interface EditWorkerProfileModalProps {
 }
 
 export function EditWorkerProfileModal({ isOpen, onClose, worker }: EditWorkerProfileModalProps) {
-    const handleSubmit = (e: React.FormEvent) => {
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        console.log('Updating profile for', worker.name);
-        onClose();
+        setIsLoading(true);
+        const form = e.currentTarget;
+        const fullName = (form.querySelector('#name') as HTMLInputElement).value;
+        const role = (form.querySelector('#role') as HTMLInputElement).value;
+        const phone = (form.querySelector('#phone') as HTMLInputElement).value;
+        const hourlyRate = (form.querySelector('#hourlyRate') as HTMLInputElement).value;
+
+        try {
+            const userIdToUpdate = (worker as any).id || (worker as any).memberId;
+            await apiClient.patch(`/super_admin/team/users/${userIdToUpdate}`, {
+                fullName,
+                role,
+                phone,
+                hourlyRate
+            });
+            // Force a reload to reflect new data
+            window.location.reload();
+        } catch (error) {
+            console.error('Failed to update worker profile', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -126,13 +150,13 @@ export function EditWorkerProfileModal({ isOpen, onClose, worker }: EditWorkerPr
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-6 border-t border-gray-100 sticky bottom-0 bg-white pb-2 mt-4">
-                    <Button type="button" variant="ghost" onClick={onClose} className="px-6 font-bold text-gray-400 hover:text-gray-600">
+                <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                    <Button type="button" variant="outline" onClick={onClose} className="h-12 px-6 rounded-xl font-bold">
                         Cancel
                     </Button>
-                    <Button type="submit" className="px-10 bg-[#1D4F6D] hover:bg-[#163a50] text-white shadow-xl transition-all font-bold gap-2 rounded-xl">
-                        <Save className="h-4 w-4" />
-                        Save Profile
+                    <Button type="submit" className="h-12 px-8 rounded-xl bg-[#1D4F6D] hover:bg-[#1D4F6D]/90 text-white font-bold gap-2" disabled={isLoading}>
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        Save Changes
                     </Button>
                 </div>
             </form>
