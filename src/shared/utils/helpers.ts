@@ -105,6 +105,36 @@ export function formatDateRange(startDate: string, endDate: string): string {
 }
 
 /**
+ * Format 24h or ISO time string to 12h AM/PM format (e.g. 08:00 AM, 05:00 PM)
+ */
+export function formatTimeAMPM(timeStr?: string): string {
+    if (!timeStr) return '--:--';
+    const trimmed = timeStr.trim();
+    const ampmMatch = trimmed.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/i);
+    if (ampmMatch) {
+        const hrs = parseInt(ampmMatch[1], 10).toString().padStart(2, '0');
+        const mins = ampmMatch[2];
+        const ampm = ampmMatch[3].toUpperCase();
+        return `${hrs}:${mins} ${ampm}`;
+    }
+    const match24 = trimmed.match(/^(\d{1,2}):(\d{2})/);
+    if (match24) {
+        let hrs = parseInt(match24[1], 10);
+        const mins = match24[2];
+        if (!isNaN(hrs)) {
+            const ampm = hrs >= 12 ? 'PM' : 'AM';
+            hrs = hrs % 12 || 12;
+            return `${hrs.toString().padStart(2, '0')}:${mins} ${ampm}`;
+        }
+    }
+    const d = new Date(trimmed);
+    if (!isNaN(d.getTime())) {
+        return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+    return trimmed;
+}
+
+/**
  * Calculate hours between two times
  */
 export function calculateHours(startTime: string, endTime: string): number {

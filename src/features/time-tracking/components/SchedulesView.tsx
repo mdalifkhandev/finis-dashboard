@@ -6,6 +6,7 @@ import { Badge } from '@/shared/components/ui/Badge';
 import { Modal } from '@/shared/components/ui/Modal';
 import { Input } from '@/shared/components/ui/Input';
 import { Schedule } from '@/shared/types';
+import { formatTimeAMPM } from '@/shared/utils/helpers';
 
 export function SchedulesView() {
     const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -46,7 +47,7 @@ export function SchedulesView() {
                                         <h3 className="font-semibold text-lg flex items-center gap-2">
                                             {schedule.name}
                                             <Badge variant="outline" className="ml-2">
-                                                {schedule.startTime} - {schedule.endTime}
+                                                {formatTimeAMPM(schedule.startTime)} - {formatTimeAMPM(schedule.endTime)}
                                             </Badge>
                                         </h3>
                                         <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">

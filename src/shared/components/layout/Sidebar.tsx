@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, HardHat,
   Settings, LogOut, UserCog,
   Clock, MapPin, MessageSquare, Building, FileBarChart, X, Briefcase, Package, DollarSign, Calculator,
-  ChevronRight, ScrollText,
+  ChevronRight, ScrollText, CalendarClock,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/Avatar';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -34,6 +34,7 @@ const menuItems = [
     section: 'TIME & PAYROLL',
     items: [
       { icon: Clock, label: 'Time Tracking', path: '/time-tracking' },
+      { icon: CalendarClock, label: 'Shift Adjustments', path: '/time-tracking/adjustments' },
       { icon: MapPin, label: 'Geofencing', path: '/geofencing' },
       { icon: Calculator, label: 'Payroll', path: '/payroll' }
     ]

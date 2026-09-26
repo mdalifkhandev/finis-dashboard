@@ -10,7 +10,33 @@ import { apiClient, API_ENDPOINTS } from '@/services';
 import { TimeAdjustmentRequest } from '@/shared/types';
 import { getStatusColor } from '@/shared/utils';
 
-export function TimeAdjustmentRequestsPage() {
+function formatAMPM(dateOrStr?: string | Date | null): string {
+    if (!dateOrStr) return '--:--';
+    if (typeof dateOrStr === 'string' && (dateOrStr.includes('AM') || dateOrStr.includes('PM'))) {
+        return dateOrStr;
+    }
+    const d = new Date(dateOrStr);
+    if (isNaN(d.getTime())) return String(dateOrStr);
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
+function extractRequestedTime(reason?: string, fallback?: string | Date | null): string {
+    const match = reason?.match(/\[Time:\s*([^\]]+)\]/);
+    if (match) return match[1].trim();
+    return formatAMPM(fallback);
+}
+
+function cleanReasonText(reason?: string): string {
+    if (!reason) return 'No reason provided';
+    const cleaned = reason
+        .replace(/\[Scope:\s*[^\]]+\]\s*/gi, '')
+        .replace(/\[Date:\s*[^\]]+\]\s*/gi, '')
+        .replace(/\[Time:\s*[^\]]+\]\s*/gi, '')
+        .trim();
+    return cleaned || 'No reason provided';
+}
+
+export function TimeAdjustmentRequestsPage({ embedded = false }: { embedded?: boolean }) {
     const [requests, setRequests] = useState<TimeAdjustmentRequest[]>([]);
     const [selectedRequest, setSelectedRequest] = useState<TimeAdjustmentRequest | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
@@ -21,23 +47,26 @@ export function TimeAdjustmentRequestsPage() {
         setIsLoading(true);
         try {
             const res = await apiClient.get<any>(API_ENDPOINTS.TIME_TRACKING.PENDING_ADJUSTMENTS);
-            const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+            const raw = res?.data?.data ?? res?.data ?? res;
+            const list = Array.isArray(raw) ? raw : [];
             const mapped: TimeAdjustmentRequest[] = list.map((item: any) => ({
                 id: item.id,
                 workerId: item.workerId,
                 workerName: item.worker?.fullName || item.workerName || 'Worker',
                 date: item.date ? new Date(item.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
                 requestType: item.requestType || 'check_in',
-                originalTime: item.originalTime ? new Date(item.originalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--',
-                requestedTime: item.adjustedTime ? new Date(item.adjustedTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--',
-                reason: item.reason || 'No reason provided',
+                originalTime: formatAMPM(item.originalTime),
+                requestedTime: extractRequestedTime(item.reason, item.adjustedTime),
+                reason: cleanReasonText(item.reason),
+                rawReason: item.reason || '',
                 status: item.status || 'pending',
                 createdAt: item.createdAt || item.submittedAt || new Date().toISOString(),
                 reviewedAt: item.reviewedAt,
                 reviewedBy: item.reviewedBy,
             }));
             setRequests(mapped);
-        } catch {
+        } catch (err) {
+            console.error('Failed to fetch time adjustments:', err);
             setRequests([]);
         } finally {
             setIsLoading(false);
@@ -106,11 +135,19 @@ export function TimeAdjustmentRequestsPage() {
         {
             key: 'requestType',
             header: 'Type',
-            render: (record: TimeAdjustmentRequest) => (
-                <Badge variant="secondary">
-                    {record.requestType.replace('_', '-')}
-                </Badge>
-            )
+            render: (record: any) => {
+                const isSingleDay = record.rawReason?.includes('Scope: single_day') || record.reason?.includes('Scope: single_day');
+                return (
+                    <div className="flex flex-col gap-1 items-start">
+                        <Badge variant="secondary">
+                            {record.requestType.replace('_', '-')}
+                        </Badge>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isSingleDay ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                            {isSingleDay ? '1 Day Only' : 'Regular Shift'}
+                        </span>
+                    </div>
+                );
+            }
         },
         {
             key: 'timeChange',
@@ -182,11 +219,19 @@ export function TimeAdjustmentRequestsPage() {
         {
             key: 'requestType',
             header: 'Type',
-            render: (record: TimeAdjustmentRequest) => (
-                <Badge variant="secondary">
-                    {record.requestType.replace('_', '-')}
-                </Badge>
-            )
+            render: (record: any) => {
+                const isSingleDay = record.rawReason?.includes('Scope: single_day') || record.reason?.includes('Scope: single_day');
+                return (
+                    <div className="flex flex-col gap-1 items-start">
+                        <Badge variant="secondary">
+                            {record.requestType.replace('_', '-')}
+                        </Badge>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isSingleDay ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                            {isSingleDay ? '1 Day Only' : 'Regular Shift'}
+                        </span>
+                    </div>
+                );
+            }
         },
         {
             key: 'timeChange',
@@ -217,13 +262,15 @@ export function TimeAdjustmentRequestsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Time Adjustment Requests</h1>
-                    <p className="text-gray-600 mt-1">Review and manage worker check-in/out correction requests</p>
+            {!embedded && (
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">Time Adjustment Requests</h1>
+                        <p className="text-gray-600 mt-1">Review and manage worker check-in/out correction requests</p>
+                    </div>
+                    {isLoading && <Loader2 className="w-5 h-5 animate-spin text-gray-400" />}
                 </div>
-                {isLoading && <Loader2 className="w-5 h-5 animate-spin text-gray-400" />}
-            </div>
+            )}
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

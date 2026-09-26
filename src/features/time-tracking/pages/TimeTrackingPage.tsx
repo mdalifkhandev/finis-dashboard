@@ -7,6 +7,7 @@ import { useGetAttendanceRecordsQuery, useGetAttendanceSummaryQuery } from '@/st
 
 // Sub-components
 import { AttendanceView } from '../components/AttendanceView';
+import { TimeAdjustmentRequestsPage } from './TimeAdjustmentRequestsPage';
 
 export function TimeTrackingPage() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -49,6 +50,7 @@ export function TimeTrackingPage() {
                 tabs={[
                     { id: 'overview', label: 'Overview' },
                     { id: 'attendance', label: 'Attendance' },
+                    { id: 'adjustments', label: 'Shift Adjustments' },
                 ]}
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
@@ -158,6 +160,10 @@ export function TimeTrackingPage() {
                     loading={recordsLoading}
                     dateLabel={new Date().toLocaleDateString()}
                 />
+            )}
+
+            {activeTab === 'adjustments' && (
+                <TimeAdjustmentRequestsPage embedded />
             )}
         </div>
     );
