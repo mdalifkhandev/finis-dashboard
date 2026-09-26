@@ -84,7 +84,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         })
         .map(item => {
           if (!isSuperAdmin && item.path === '/subscription-plans') {
-            return { ...item, label: 'My Subscription' };
+            return { ...item, label: 'My Subscription', path: '/subscription-plans' };
           }
           return item;
         });

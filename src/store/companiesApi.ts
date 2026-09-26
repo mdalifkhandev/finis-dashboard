@@ -662,7 +662,16 @@ export const companiesApi = createApi({
 
         createCompany: builder.mutation<Company, Partial<Company> & { ownerId?: string } | FormData>({
             query: (data) => {
-                const url = API_ENDPOINTS.SUPER_ADMIN.COMPANIES.CREATE;
+                const stored = localStorage.getItem('auth_user');
+                let isSuperAdmin = false;
+                try {
+                    isSuperAdmin = (JSON.parse(stored || '{}') as { role?: string })?.role === 'super_admin';
+                } catch {}
+
+                const url = isSuperAdmin
+                    ? API_ENDPOINTS.SUPER_ADMIN.COMPANIES.CREATE
+                    : API_ENDPOINTS.COMPANIES.CREATE;
+
                 if (data instanceof FormData) {
                     return { url, method: 'POST', body: data };
                 }
@@ -692,25 +701,37 @@ export const companiesApi = createApi({
         }),
 
         updateCompany: builder.mutation<Company, CompanyUpdateArgs>({
-            query: ({ id, data }) => ({
-                url: API_ENDPOINTS.SUPER_ADMIN.COMPANIES.UPDATE(id),
-                method: 'PUT',
-                body: data instanceof FormData ? data : {
-                    ...(data.name ? { name: data.name } : {}),
-                    ...(data.industry ? { industry: data.industry } : {}),
-                    ...(data.description ? { description: data.description } : {}),
-                    ...(data.contact?.phone?.trim() ? { phone: data.contact.phone.trim() } : {}),
-                    ...(data.contact?.email?.trim() ? { email: data.contact.email.trim() } : {}),
-                    ...(data.publicLink?.url?.trim()
-                        ? { website: data.publicLink.url.trim() }
-                        : {}),
-                    ...(data.address ? { address: data.address } : {}),
-                    ...(typeof data.annualRevenue === 'number' ? { revenue: data.annualRevenue } : {}),
-                    ...(data.contact?.name?.trim() ? { primaryContact: data.contact.name.trim() } : {}),
-                    ...(data.contact?.email?.trim() ? { contactEmail: data.contact.email.trim() } : {}),
-                    ...(data.contact?.phone?.trim() ? { contactPhone: data.contact.phone.trim() } : {}),
-                },
-            }),
+            query: ({ id, data }) => {
+                const stored = localStorage.getItem('auth_user');
+                let isSuperAdmin = false;
+                try {
+                    isSuperAdmin = (JSON.parse(stored || '{}') as { role?: string })?.role === 'super_admin';
+                } catch {}
+
+                const url = isSuperAdmin
+                    ? API_ENDPOINTS.SUPER_ADMIN.COMPANIES.UPDATE(id)
+                    : API_ENDPOINTS.COMPANIES.UPDATE(id);
+
+                return {
+                    url,
+                    method: 'PUT',
+                    body: data instanceof FormData ? data : {
+                        ...(data.name ? { name: data.name } : {}),
+                        ...(data.industry ? { industry: data.industry } : {}),
+                        ...(data.description ? { description: data.description } : {}),
+                        ...(data.contact?.phone?.trim() ? { phone: data.contact.phone.trim() } : {}),
+                        ...(data.contact?.email?.trim() ? { email: data.contact.email.trim() } : {}),
+                        ...(data.publicLink?.url?.trim()
+                            ? { website: data.publicLink.url.trim() }
+                            : {}),
+                        ...(data.address ? { address: data.address } : {}),
+                        ...(typeof data.annualRevenue === 'number' ? { revenue: data.annualRevenue } : {}),
+                        ...(data.contact?.name?.trim() ? { primaryContact: data.contact.name.trim() } : {}),
+                        ...(data.contact?.email?.trim() ? { contactEmail: data.contact.email.trim() } : {}),
+                        ...(data.contact?.phone?.trim() ? { contactPhone: data.contact.phone.trim() } : {}),
+                    },
+                };
+            },
             transformResponse: (response: ApiEnvelope<CompanyProfileResponse> | CompanyProfileResponse): Company => {
                 const company = 'success' in response && 'data' in response ? response.data : response;
                 return mapBackendProfileToCompany(company as CompanyProfileResponse);
@@ -727,10 +748,20 @@ export const companiesApi = createApi({
         }),
 
         deleteCompany: builder.mutation<void, string>({
-            query: (companyId) => ({
-                url: API_ENDPOINTS.SUPER_ADMIN.COMPANIES.DELETE(companyId),
-                method: 'DELETE',
-            }),
+            query: (companyId) => {
+                const stored = localStorage.getItem('auth_user');
+                let isSuperAdmin = false;
+                try {
+                    isSuperAdmin = (JSON.parse(stored || '{}') as { role?: string })?.role === 'super_admin';
+                } catch {}
+
+                return {
+                    url: isSuperAdmin
+                        ? API_ENDPOINTS.SUPER_ADMIN.COMPANIES.DELETE(companyId)
+                        : API_ENDPOINTS.COMPANIES.DELETE(companyId),
+                    method: 'DELETE',
+                };
+            },
             transformResponse: (): void => undefined,
             invalidatesTags: ['Companies'],
         }),

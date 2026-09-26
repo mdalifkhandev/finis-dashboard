@@ -18,6 +18,9 @@ interface EnvironmentConfig {
     maps: {
         googleMapsApiKey: string;
     };
+    stripe: {
+        publishableKey: string;
+    };
     app: {
         name: string;
         version: string;
@@ -52,6 +55,9 @@ export const config: EnvironmentConfig = {
     },
     maps: {
         googleMapsApiKey: getEnvVar('VITE_GOOGLE_MAPS_API_KEY', ''),
+    },
+    stripe: {
+        publishableKey: getEnvVar('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_51TUBgUC2pLUXHqxfzDZPxt9L8CDYLTfixYOJnDsNfcPDOalKo4vGfLGEvdN7ShuqaCwrt1atXEZPduPVZXJ4UZZt00IOTFH2VZ'),
     },
 
     app: {

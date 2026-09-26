@@ -1,15 +1,13 @@
-import { useEffect, useState } from 'react';
-import { Check, ShieldCheck, Rocket, Building2, Lock, Mail, CreditCard } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, useCallback } from 'react';
+import { Check, ShieldCheck, Rocket, Building2, CreditCard } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import { Card } from '@/shared/components/ui/Card';
 import { Badge } from '@/shared/components/ui/Badge';
-import { Modal } from '@/shared/components/ui/Modal';
-import { Input } from '@/shared/components/ui/Input';
-import { Label } from '@/shared/components/ui/Label';
+import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { selectAuthToken, selectAuthUser } from '@/store/authSlice';
 import { useAppSelector } from '@/store/hooks';
 import { getPublicPlans, type SubscriptionPlanApi } from '../services/subscriptionApi';
+import { StripePaymentModal } from '../components/StripePaymentModal';
 import { config } from '@/config/env';
 
 function featureText(plan: SubscriptionPlanApi) {
@@ -23,21 +21,52 @@ function featureText(plan: SubscriptionPlanApi) {
   ];
 }
 
-export function PublicSubscriptionPlansPage() {
-  const navigate = useNavigate();
+interface PublicSubscriptionPlansPageProps {
+  isDashboardView?: boolean;
+}
+
+interface AdminSubscriptionStatus {
+  tenantId: string | null;
+  plan: {
+    id: string;
+    name: string;
+    priceMonthly?: number | null;
+    priceYearly?: number | null;
+  } | null;
+  subscriptionStatus: string | null;
+  currentPeriodStart?: string | null;
+  currentPeriodEnd?: string | null;
+  planInterval?: string | null;
+  isActive: boolean;
+  isExpired: boolean;
+}
+
+export function PublicSubscriptionPlansPage({ isDashboardView = false }: PublicSubscriptionPlansPageProps = {}) {
   const authToken = useAppSelector(selectAuthToken);
   const authUser = useAppSelector(selectAuthUser);
   const isSuperAdmin = authUser?.role === 'super_admin';
   const [plans, setPlans] = useState<SubscriptionPlanApi[]>([]);
   const [loading, setLoading] = useState(true);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<{ subscriptionStatus: string | null; isExpired: boolean } | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<AdminSubscriptionStatus | null>(null);
   const [buyOpen, setBuyOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlanApi | null>(null);
   const [interval, setInterval] = useState<'monthly' | 'yearly'>('monthly');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState('');
+
+  const loadStatus = useCallback(async () => {
+    if (!authToken || isSuperAdmin) return;
+    try {
+      const response = await fetch(`${config.apiBaseUrl}/admin/subscription/status`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      const data = await response.json();
+      if (response.ok && data?.success !== false && data?.data) {
+        setSubscriptionStatus(data.data);
+      }
+    } catch {
+      // ignore status fetch failure
+    }
+  }, [authToken, isSuperAdmin]);
 
   useEffect(() => {
     const load = async () => {
@@ -53,25 +82,8 @@ export function PublicSubscriptionPlansPage() {
   }, []);
 
   useEffect(() => {
-    const loadStatus = async () => {
-      if (!authToken || isSuperAdmin) return;
-      try {
-        const response = await fetch(`${config.apiBaseUrl}/admin/subscription/status`, {
-          headers: { Authorization: `Bearer ${authToken}` },
-        });
-        const data = await response.json();
-        if (response.ok && data?.success !== false) {
-          setSubscriptionStatus({
-            subscriptionStatus: data?.data?.subscriptionStatus ?? null,
-            isExpired: Boolean(data?.data?.isExpired),
-          });
-        }
-      } catch {
-        // ignore status fetch failure
-      }
-    };
     void loadStatus();
-  }, [authToken, isSuperAdmin]);
+  }, [loadStatus]);
 
   const openBuyModal = (plan: SubscriptionPlanApi, nextInterval: 'monthly' | 'yearly') => {
     if (!isSuperAdmin && subscriptionStatus?.subscriptionStatus === 'active' && !subscriptionStatus.isExpired) {
@@ -79,233 +91,203 @@ export function PublicSubscriptionPlansPage() {
     }
     setSelectedPlan(plan);
     setInterval(nextInterval);
-    setEmail('');
-    setPassword('');
-    setFormError('');
+    setEmail(authUser?.email || '');
     setBuyOpen(true);
   };
 
-  const submitCheckout = async () => {
-    if (!selectedPlan) return;
-    setSubmitting(true);
-    setFormError('');
-    try {
-      const response = await fetch(`${config.apiBaseUrl}/subscription/verify-and-checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          password,
-          planId: selectedPlan.id,
-          interval,
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok || data?.success === false) {
-        throw new Error(data?.message || 'Checkout failed');
-      }
-      window.location.href = data.data.checkoutUrl;
-    } catch (error) {
-      setFormError(
-        error instanceof Error
-          ? error.message
-          : 'Invalid credentials or account not active',
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(29,79,109,0.14),_transparent_28%),linear-gradient(180deg,_#f8fbfe_0%,_#eef4f8_100%)] text-gray-900">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <header className="mb-8 rounded-[24px] border border-white/60 bg-white/80 px-5 py-4 shadow-[0_18px_60px_-28px_rgba(15,23,42,0.22)] backdrop-blur">
-          <h1 className="text-2xl font-black tracking-tight text-gray-900 sm:text-3xl">Subscription Plans</h1>
-        </header>
+    <div className={isDashboardView ? "space-y-6 pb-12" : "min-h-screen bg-[radial-gradient(circle_at_top,_rgba(29,79,109,0.14),_transparent_28%),linear-gradient(180deg,_#f8fbfe_0%,_#eef4f8_100%)] text-gray-900"}>
+      <div className={isDashboardView ? "space-y-6" : "mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8"}>
+        {isDashboardView ? (
+          <PageHeader
+            title="My Subscription"
+            description="Choose a subscription plan to activate and manage your workspace"
+            icon={CreditCard}
+          />
+        ) : (
+          <header className="rounded-[24px] border border-white/60 bg-white/80 px-5 py-4 shadow-[0_18px_60px_-28px_rgba(15,23,42,0.22)] backdrop-blur">
+            <h1 className="text-2xl font-black tracking-tight text-gray-900 sm:text-3xl">Subscription Plans</h1>
+          </header>
+        )}
 
         {loading ? (
-          <div className="py-20 text-center text-gray-500">Loading plans...</div>
+          <div className="flex flex-col items-center justify-center min-h-[300px] space-y-4">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#1D4F6D] border-t-transparent" />
+            <p className="text-sm font-medium text-gray-500">Loading plans...</p>
+          </div>
         ) : (
-          <>
-            {!isSuperAdmin && subscriptionStatus?.subscriptionStatus === 'active' && !subscriptionStatus.isExpired && (
-              <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-                Your subscription is already active. Payment is disabled until it expires.
+          <div className="space-y-6">
+            {!isSuperAdmin && subscriptionStatus?.isActive && subscriptionStatus?.plan && (
+              <div className="rounded-[24px] border border-emerald-200/80 bg-gradient-to-r from-emerald-50/90 via-emerald-50/40 to-white p-6 shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-900/10 shrink-0">
+                      <ShieldCheck className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2.5">
+                        <h3 className="text-xl font-black text-gray-900">{subscriptionStatus.plan.name} Plan</h3>
+                        <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white text-xs px-2.5 py-0.5 rounded-full uppercase tracking-wider font-bold">
+                          Active
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-gray-500 font-medium mt-1">
+                        Billed {subscriptionStatus.planInterval || 'monthly'} • Next renewal:{' '}
+                        <span className="font-semibold text-gray-700">
+                          {subscriptionStatus.currentPeriodEnd
+                            ? new Date(subscriptionStatus.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                            : 'Active'}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <span className="text-2xl font-black text-gray-900">
+                        ${subscriptionStatus.planInterval === 'yearly' ? subscriptionStatus.plan.priceYearly : subscriptionStatus.plan.priceMonthly}
+                      </span>
+                      <span className="text-xs font-semibold text-gray-400 block">
+                        /{subscriptionStatus.planInterval === 'yearly' ? 'year' : 'month'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
-          <div className="grid gap-6 lg:grid-cols-3">
-            {plans.map((plan, index) => (
-              <Card
-                key={plan.id}
-                className="relative overflow-hidden rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_-18px_rgba(15,23,42,0.18)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_90px_-20px_rgba(15,23,42,0.26)]"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1D4F6D]/10 text-[#1D4F6D]">
-                        {index === 0 ? <ShieldCheck className="h-5 w-5" /> : index === 1 ? <Rocket className="h-5 w-5" /> : <Building2 className="h-5 w-5" />}
-                      </div>
+
+            {plans.length === 0 ? (
+              <div className="flex flex-col items-center justify-center min-h-[260px] rounded-2xl border border-dashed border-gray-200 bg-white p-10 text-center shadow-sm">
+                <CreditCard className="h-10 w-10 text-gray-300 mb-3" />
+                <h3 className="text-base font-bold text-gray-900">No Subscription Plans Available</h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-sm">There are currently no active subscription plans configured.</p>
+              </div>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {plans.map((plan, index) => {
+                  const isCurrentPlan = Boolean(
+                    !isSuperAdmin &&
+                    subscriptionStatus?.isActive &&
+                    subscriptionStatus?.plan?.id === plan.id
+                  );
+
+                  return (
+                    <Card
+                      key={plan.id}
+                      className={
+                        isCurrentPlan
+                          ? "relative overflow-hidden rounded-[24px] border-2 border-emerald-500 bg-white p-6 shadow-md transition-all duration-200 flex flex-col justify-between"
+                          : isDashboardView
+                          ? "relative overflow-hidden rounded-[24px] border border-gray-100 bg-white p-6 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between"
+                          : "relative overflow-hidden rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_-18px_rgba(15,23,42,0.18)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_90px_-20px_rgba(15,23,42,0.26)] flex flex-col justify-between"
+                      }
+                    >
                       <div>
-                        <h3 className="text-2xl font-black tracking-tight">{plan.name}</h3>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Monthly billing</p>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${isCurrentPlan ? 'bg-emerald-100 text-emerald-700' : 'bg-[#1D4F6D]/10 text-[#1D4F6D]'}`}>
+                              {index === 0 ? <ShieldCheck className="h-5 w-5" /> : index === 1 ? <Rocket className="h-5 w-5" /> : <Building2 className="h-5 w-5" />}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-2xl font-black tracking-tight text-gray-900">{plan.name}</h3>
+                                {isCurrentPlan && (
+                                  <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                                    Current
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-gray-400">Monthly billing</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-6">
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-4xl font-black tracking-tight text-gray-900">${plan.priceMonthly}</span>
+                            <span className="text-sm font-semibold text-gray-500">/ month</span>
+                          </div>
+                          <p className="mt-1.5 text-xs font-medium text-gray-500">
+                            Yearly: <span className="font-bold text-gray-900">${plan.priceYearly ?? 0}</span>
+                          </p>
+                        </div>
+
+                        <div className="mt-6 space-y-2.5 rounded-2xl bg-gray-50/70 p-4">
+                          {featureText(plan).map((feature) => (
+                            <div key={feature} className="flex items-start gap-2.5 text-xs font-medium text-gray-700">
+                              <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                                <Check className="h-3 w-3" />
+                              </div>
+                              <span>{feature}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="mt-6 grid grid-cols-3 gap-2 text-center text-xs font-semibold text-gray-500">
+                          <div className="rounded-xl bg-gray-50/80 border border-gray-100/60 p-2.5">
+                            <div className="text-[10px] uppercase tracking-[0.16em] text-gray-400">Companies</div>
+                            <div className="mt-1 text-base font-black text-gray-900">
+                              {plan.maxCompanies === null || plan.maxCompanies === undefined ? '∞' : plan.maxCompanies}
+                            </div>
+                          </div>
+                          <div className="rounded-xl bg-gray-50/80 border border-gray-100/60 p-2.5">
+                            <div className="text-[10px] uppercase tracking-[0.16em] text-gray-400">Projects</div>
+                            <div className="mt-1 text-base font-black text-gray-900">
+                              {plan.maxProjects === null || plan.maxProjects === undefined ? '∞' : plan.maxProjects}
+                            </div>
+                          </div>
+                          <div className="rounded-xl bg-gray-50/80 border border-gray-100/60 p-2.5">
+                            <div className="text-[10px] uppercase tracking-[0.16em] text-gray-400">Users</div>
+                            <div className="mt-1 text-base font-black text-gray-900">
+                              {plan.maxUsers === null || plan.maxUsers === undefined ? '∞' : plan.maxUsers}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="mt-6">
-                  <div className="flex items-end gap-2">
-                    <span className="text-5xl font-black tracking-tight">${plan.priceMonthly}</span>
-                    <span className="pb-2 text-sm font-semibold text-gray-500">/ month</span>
-                  </div>
-                  <p className="mt-2 text-sm text-gray-500">
-                    Yearly: <span className="font-bold text-gray-900">${plan.priceYearly ?? 0}</span>
-                  </p>
-                </div>
-
-                <div className="mt-6 space-y-3 rounded-2xl bg-gray-50/70 p-4">
-                  {featureText(plan).map((feature) => (
-                    <div key={feature} className="flex items-start gap-3 text-sm text-gray-700">
-                      <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                        <Check className="h-3.5 w-3.5" />
+                      <div className="mt-6 pt-2">
+                        {isCurrentPlan ? (
+                          <div className="rounded-xl bg-emerald-50 border border-emerald-200 py-2.5 text-center text-xs font-bold text-emerald-700">
+                            Active Subscription
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-3">
+                            <Button
+                              className="h-11 rounded-xl bg-[#1D4F6D] text-white hover:bg-[#153a50] font-semibold text-xs shadow-sm transition-all"
+                              disabled={!isSuperAdmin && subscriptionStatus?.isActive}
+                              onClick={() => openBuyModal(plan, 'monthly')}
+                            >
+                              Buy Monthly
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="h-11 rounded-xl border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold text-xs transition-all"
+                              disabled={!isSuperAdmin && subscriptionStatus?.isActive}
+                              onClick={() => openBuyModal(plan, 'yearly')}
+                            >
+                              Buy Yearly
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                      <span>{feature}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 grid grid-cols-3 gap-3 text-center text-xs font-semibold text-gray-500">
-                  <div className="rounded-2xl bg-gray-50 p-3">
-                    <div className="text-[11px] uppercase tracking-[0.18em] text-gray-400">Companies</div>
-                    <div className="mt-1 text-base font-black text-gray-900">
-                      {plan.maxCompanies === null || plan.maxCompanies === undefined ? '∞' : plan.maxCompanies}
-                    </div>
-                  </div>
-                  <div className="rounded-2xl bg-gray-50 p-3">
-                    <div className="text-[11px] uppercase tracking-[0.18em] text-gray-400">Projects</div>
-                    <div className="mt-1 text-base font-black text-gray-900">
-                      {plan.maxProjects === null || plan.maxProjects === undefined ? '∞' : plan.maxProjects}
-                    </div>
-                  </div>
-                  <div className="rounded-2xl bg-gray-50 p-3">
-                    <div className="text-[11px] uppercase tracking-[0.18em] text-gray-400">Users</div>
-                    <div className="mt-1 text-base font-black text-gray-900">
-                      {plan.maxUsers === null || plan.maxUsers === undefined ? '∞' : plan.maxUsers}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 grid grid-cols-2 gap-3">
-                  <Button
-                    className="h-12 bg-[#1D4F6D] text-white hover:bg-[#173f58]"
-                    disabled={!isSuperAdmin && subscriptionStatus?.subscriptionStatus === 'active' && !subscriptionStatus.isExpired}
-                    onClick={() => openBuyModal(plan, 'monthly')}
-                  >
-                    Buy Monthly
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-12 border-gray-200 text-gray-700 hover:bg-gray-50"
-                    disabled={!isSuperAdmin && subscriptionStatus?.subscriptionStatus === 'active' && !subscriptionStatus.isExpired}
-                    onClick={() => openBuyModal(plan, 'yearly')}
-                  >
-                    Buy Yearly
-                  </Button>
-                </div>
-                {!isSuperAdmin && subscriptionStatus?.subscriptionStatus === 'active' && !subscriptionStatus.isExpired && (
-                  <div className="mt-3">
-                    <Badge className="bg-emerald-100 text-emerald-700">Already Active</Badge>
-                  </div>
-                )}
-              </Card>
-            ))}
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </div>
-          </>
         )}
       </div>
 
-      <Modal
+      <StripePaymentModal
         isOpen={buyOpen}
         onClose={() => setBuyOpen(false)}
-        title="Start Subscription"
-        maxWidth="2xl"
-      >
-        <div className="space-y-5">
-          <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-            <div className="text-xs font-bold uppercase tracking-[0.18em] text-gray-400">Selected Plan</div>
-            <div className="mt-2 text-2xl font-black text-gray-900">{selectedPlan?.name ?? 'Plan'}</div>
-            <div className="mt-1 text-sm text-gray-500">
-              {interval === 'monthly' ? `Monthly ${selectedPlan?.priceMonthly ?? 0}` : `Yearly ${selectedPlan?.priceYearly ?? 0}`}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {formError && (
-              <div className="md:col-span-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-                {formError}
-              </div>
-            )}
-            <div className="space-y-2 md:col-span-2">
-              <Label className="text-xs font-bold uppercase tracking-[0.16em] text-gray-500">Email</Label>
-              <Input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                type="email"
-                startIcon={<Mail className="h-4 w-4" />}
-                placeholder="admin@company.com"
-                className={formError ? 'border-red-300 bg-red-50 focus-visible:ring-red-300' : ''}
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label className="text-xs font-bold uppercase tracking-[0.16em] text-gray-500">Password</Label>
-              <Input
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                type="password"
-                startIcon={<Lock className="h-4 w-4" />}
-                placeholder="Your password"
-                className={formError ? 'border-red-300 bg-red-50 focus-visible:ring-red-300' : ''}
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label className="text-xs font-bold uppercase tracking-[0.16em] text-gray-500">Billing Interval</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setInterval('monthly')}
-                  className={`rounded-2xl border p-4 text-left transition-all ${interval === 'monthly' ? 'border-[#1D4F6D] bg-[#1D4F6D]/5' : 'border-gray-100 bg-white hover:bg-gray-50'}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-[#1D4F6D]" />
-                    <span className="font-bold">Monthly</span>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setInterval('yearly')}
-                  className={`rounded-2xl border p-4 text-left transition-all ${interval === 'yearly' ? 'border-[#1D4F6D] bg-[#1D4F6D]/5' : 'border-gray-100 bg-white hover:bg-gray-50'}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-[#1D4F6D]" />
-                    <span className="font-bold">Yearly</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
-            <span>After payment success you will be redirected automatically.</span>
-            <span className="font-semibold text-[#1D4F6D]">Stripe Checkout</span>
-          </div>
-
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setBuyOpen(false)}>Cancel</Button>
-            <Button onClick={submitCheckout} disabled={submitting || !selectedPlan}>
-              {submitting ? 'Redirecting...' : 'Proceed to Payment'}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        plan={selectedPlan}
+        interval={interval}
+        email={authUser?.email || email}
+        onSuccess={() => {
+          void loadStatus();
+        }}
+      />
     </div>
   );
 }

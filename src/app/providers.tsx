@@ -7,6 +7,8 @@ import { store } from '@/store/store';
 import { HelmetProvider } from 'react-helmet-async';
 import { queryClient } from '@/lib/queryClient';
 
+import { ToastProvider } from '@/context/ToastContext';
+
 interface AppProvidersProps {
     children: ReactNode;
 }
@@ -17,9 +19,11 @@ export function AppProviders({ children }: AppProvidersProps) {
             <QueryClientProvider client={queryClient}>
                 <HelmetProvider>
                     <ErrorBoundary>
-                        <BrowserRouter>
-                            {children}
-                        </BrowserRouter>
+                        <ToastProvider>
+                            <BrowserRouter>
+                                {children}
+                            </BrowserRouter>
+                        </ToastProvider>
                     </ErrorBoundary>
                 </HelmetProvider>
             </QueryClientProvider> 

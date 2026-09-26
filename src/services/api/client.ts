@@ -74,9 +74,12 @@ class ApiClient {
         }
 
         if (!response.ok) {
+            const serverMessage = isJson && typeof data === 'object' && data !== null
+                ? (data as any).message || (data as any).error
+                : undefined;
             const error: ApiError = {
                 code: `HTTP_${response.status}`,
-                message: response.statusText,
+                message: (Array.isArray(serverMessage) ? serverMessage.join(', ') : serverMessage) || response.statusText,
                 statusCode: response.status,
                 details: isJson ? (data as any) : undefined,
             };

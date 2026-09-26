@@ -5,6 +5,7 @@ import { Button } from '@/shared/components/ui/Button';
 import { Modal } from '@/shared/components/ui/Modal';
 import { Mail, Phone, MoreHorizontal, Shield, HardHat, UserPlus, Trash2, Users } from 'lucide-react';
 import { useProjectTeam, useRemoveTeamMember, useAvailableManagers, useAvailableWorkers, useAddTeamManager, useAddTeamWorker } from '../hooks';
+import { useToast } from '@/context/ToastContext';
 
 function getRoleIcon(role: string) {
     if (role === 'manager') return Shield;
@@ -28,9 +29,11 @@ interface AddMemberModalProps {
     projectId: string;
     type: 'manager' | 'worker';
     managers?: any[];
+    existingMemberIds?: string[];
 }
 
-function AddMemberModal({ isOpen, onClose, projectId, type, managers = [] }: AddMemberModalProps) {
+function AddMemberModal({ isOpen, onClose, projectId, type, managers = [], existingMemberIds = [] }: AddMemberModalProps) {
+    const { toast } = useToast();
     const { data: availableManagers = [], isLoading: loadingManagers } = useAvailableManagers();
     const { data: availableWorkers = [], isLoading: loadingWorkers } = useAvailableWorkers();
     const { addManager, isAdding: addingManager } = useAddTeamManager();
@@ -42,7 +45,9 @@ function AddMemberModal({ isOpen, onClose, projectId, type, managers = [] }: Add
     const isAdding = type === 'manager' ? addingManager : addingWorker;
     const list = (type === 'manager' ? availableManagers : availableWorkers).filter((user: any) => {
         const status = (user.status || '').toString().toLowerCase();
-        return status === 'active' || status === '';
+        const isActive = status === 'active' || status === '';
+        const isAlreadyMember = existingMemberIds.includes(user.id);
+        return isActive && !isAlreadyMember;
     });
     const activeManagers = managers.filter((manager: any) => {
         const status = (manager?.user?.status || manager?.status || '').toString().toLowerCase();
@@ -50,15 +55,19 @@ function AddMemberModal({ isOpen, onClose, projectId, type, managers = [] }: Add
     });
 
     const handleAdd = async () => {
-        if (!selectedUserId) return;
+        if (!selectedUserId) {
+            toast.warning('Selection Required', `Please select a ${type} to add.`);
+            return;
+        }
         try {
             if (type === 'manager') {
                 await addManager({ projectId, userId: selectedUserId });
+                toast.success('Manager Added', 'Project manager added successfully.');
             } else {
                 let managerId = selectedManagerId || (activeManagers.length > 0 ? (activeManagers[0]?.userId || activeManagers[0]?.id) : undefined);
                 
                 if (!managerId) {
-                    alert('Please select a manager to assign this worker to.');
+                    toast.warning('Manager Required', 'Please select a manager to assign this worker to.');
                     return;
                 }
 
@@ -71,12 +80,15 @@ function AddMemberModal({ isOpen, onClose, projectId, type, managers = [] }: Add
                 }
 
                 await addWorker({ projectId, userId: selectedUserId, managerId });
+                toast.success('Worker Added', 'Worker added to project successfully.');
             }
             onClose();
             setSelectedUserId('');
             setSelectedManagerId('');
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to add member:', err);
+            const errorMsg = err?.message || err?.details?.message || 'Failed to add team member.';
+            toast.error('Unable to Add Member', errorMsg);
         }
     };
 
@@ -166,6 +178,7 @@ function AddMemberModal({ isOpen, onClose, projectId, type, managers = [] }: Add
 }
 
 export function ProjectTeam() {
+    const { toast } = useToast();
     const { id: projectId } = useParams<{ id: string }>();
     const { data, isLoading, error } = useProjectTeam(projectId ?? '');
     const { removeMember, isRemoving } = useRemoveTeamMember();
@@ -182,11 +195,15 @@ export function ProjectTeam() {
     ];
 
     const handleRemove = async (userId: string) => {
-        if (!projectId || !confirm('Remove this team member?')) return;
+        if (!projectId) return;
+        if (!window.confirm('Are you sure you want to remove this member from the project?')) return;
         try {
             await removeMember({ projectId, userId });
-        } catch (err) {
+            toast.success('Member Removed', 'Team member has been removed from the project.');
+        } catch (err: any) {
             console.error('Failed to remove member:', err);
+            const errorMsg = err?.message || err?.details?.message || 'Failed to remove member';
+            toast.error('Unable to Remove Member', errorMsg);
         }
     };
 
@@ -267,12 +284,14 @@ export function ProjectTeam() {
                                             <div className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white ${getStatusColor(user.status)}`} />
                                         </div>
                                         <button
-                                            className="text-gray-300 hover:text-red-500 transition-colors"
+                                            type="button"
+                                            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200/60 rounded-lg transition-all shadow-sm active:scale-95"
                                             onClick={() => handleRemove(userId)}
                                             disabled={isRemoving}
-                                            title="Remove from project"
+                                            title={`Remove ${fullName} from project`}
                                         >
-                                            <Trash2 className="h-4 w-4" />
+                                            <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                                            <span>Remove</span>
                                         </button>
                                     </div>
 
@@ -350,6 +369,7 @@ export function ProjectTeam() {
                     projectId={projectId ?? ''}
                     type={addModalType}
                     managers={managers}
+                    existingMemberIds={allMembers.map((m: any) => m.userId || m.id)}
                 />
             )}
         </div>

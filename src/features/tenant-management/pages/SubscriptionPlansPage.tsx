@@ -8,7 +8,8 @@ import { Badge } from '@/shared/components/ui/Badge';
 import { Input } from '@/shared/components/ui/Input';
 import { Modal } from '@/shared/components/ui/Modal';
 import { useAppSelector } from '@/store/hooks';
-import { selectAuthToken } from '@/store/authSlice';
+import { selectAuthToken, selectAuthUser } from '@/store/authSlice';
+import { PublicSubscriptionPlansPage } from './PublicSubscriptionPlansPage';
 import {
   createPlan,
   deletePlan,
@@ -64,6 +65,9 @@ const initialForm: PlanFormState = {
 
 export function SubscriptionPlansPage() {
   const token = useAppSelector(selectAuthToken);
+  const authUser = useAppSelector(selectAuthUser);
+  const isSuperAdmin = authUser?.role === 'super_admin';
+
   const [plans, setPlans] = useState<SubscriptionPlanApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
@@ -71,6 +75,7 @@ export function SubscriptionPlansPage() {
   const [form, setForm] = useState<PlanFormState>(initialForm);
 
   const loadPlans = async () => {
+    if (!isSuperAdmin) return;
     setLoading(true);
     try {
       const response = await getPlans(token || undefined);
@@ -81,8 +86,14 @@ export function SubscriptionPlansPage() {
   };
 
   useEffect(() => {
-    void loadPlans();
-  }, [token]);
+    if (isSuperAdmin) {
+      void loadPlans();
+    }
+  }, [token, isSuperAdmin]);
+
+  if (!isSuperAdmin) {
+    return <PublicSubscriptionPlansPage isDashboardView={true} />;
+  }
 
   const stats = useMemo(() => {
     const active = plans.filter((p) => p.isActive).length;
