@@ -7,6 +7,8 @@ import type { CompanyDocumentResponse } from '@/store/companiesApi';
 import { mapBackendDocumentToView } from '@/store/companiesApi';
 import { useDeleteCompanyDocumentMutation, useUploadCompanyDocumentMutation } from '@/store/companiesApi';
 import { getFullUrl } from '@/shared/utils';
+import { useAppSelector } from '@/store/hooks';
+import { selectAuthUser } from '@/store/authSlice';
 
 interface CompanyDocumentsProps {
     documents?: CompanyDocumentResponse[];
@@ -14,6 +16,8 @@ interface CompanyDocumentsProps {
 }
 
 export function CompanyDocuments({ documents, companyId }: CompanyDocumentsProps) {
+    const authUser = useAppSelector(selectAuthUser);
+    const isSuperAdmin = authUser?.role === 'super_admin';
     const docs = documents?.map(mapBackendDocumentToView) ?? [];
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploadCompanyDocument, { isLoading: isUploading }] = useUploadCompanyDocumentMutation();
@@ -158,27 +162,31 @@ export function CompanyDocuments({ documents, companyId }: CompanyDocumentsProps
                     <Filter className="h-4 w-4" />
                     Filter
                 </Button>
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    onChange={(e) => setSelectedFileName(e.target.files?.[0]?.name ?? null)}
-                />
-                <Button
-                    className="flex-1 gap-2 bg-[#1D4F6D] text-white shadow-md hover:bg-[#163a50] md:flex-none h-10"
-                    onClick={() => fileInputRef.current?.click()}
-                >
-                    <FileText className="h-4 w-4" />
-                    {selectedFileName ? selectedFileName : 'Upload Document'}
-                </Button>
-                <Button
-                    variant="outline"
-                    className="h-10 border-gray-200 text-gray-600 hover:text-gray-900"
-                    disabled={!selectedFileName || isUploading}
-                    onClick={handleUpload}
-                >
-                    {isUploading ? 'Uploading...' : 'Save'}
-                </Button>
+                {!isSuperAdmin && (
+                    <>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => setSelectedFileName(e.target.files?.[0]?.name ?? null)}
+                        />
+                        <Button
+                            className="flex-1 gap-2 bg-[#1D4F6D] text-white shadow-md hover:bg-[#163a50] md:flex-none h-10"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <FileText className="h-4 w-4" />
+                            {selectedFileName ? selectedFileName : 'Upload Document'}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="h-10 border-gray-200 text-gray-600 hover:text-gray-900"
+                            disabled={!selectedFileName || isUploading}
+                            onClick={handleUpload}
+                        >
+                            {isUploading ? 'Uploading...' : 'Save'}
+                        </Button>
+                    </>
+                )}
             </div>
         </div>
     );
@@ -265,15 +273,17 @@ export function CompanyDocuments({ documents, companyId }: CompanyDocumentsProps
                                             >
                                                 <Download className="h-4 w-4" />
                                             </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 text-gray-400 hover:bg-red-50 hover:text-red-600"
-                                                disabled={isDeleting}
-                                                onClick={() => handleDelete(doc.id)}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                            {!isSuperAdmin && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                                                    disabled={isDeleting}
+                                                    onClick={() => handleDelete(doc.id)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

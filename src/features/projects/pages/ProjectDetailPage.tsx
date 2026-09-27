@@ -68,12 +68,12 @@ export function ProjectDetailPage() {
         const floorSubTaskCount =
           floor.taskCounts?.total ??
           ((floor.tasks?.length ?? 0) +
-            (floor.rooms?.reduce((sum: number, unit: any) => sum + (unit.tasks?.length ?? 0), 0) ?? 0));
+            (floor.rooms?.reduce((sum: number, unit: any) => sum + (unit.taskCounts?.total ?? unit.tasks?.length ?? 0), 0) ?? 0));
         const floorCompletedCount =
           floor.taskCounts?.completed ??
           ((floor.tasks?.filter((task: any) => task.status === 'completed').length ?? 0) +
             (floor.rooms?.reduce(
-              (sum: number, unit: any) => sum + (unit.tasks?.filter((task: any) => task.status === 'completed').length ?? 0),
+              (sum: number, unit: any) => sum + (unit.taskCounts?.completed ?? unit.tasks?.filter((task: any) => task.status === 'completed').length ?? 0),
               0,
             ) ?? 0));
 

@@ -417,7 +417,9 @@ export function CompanyDetailPage() {
               <h2 className="text-2xl font-bold text-gray-900">Assigned Projects</h2>
               <div className="flex items-center gap-3">
                 <Badge variant="secondary" className="px-3 py-1 font-bold">{companyProjects.length} Projects</Badge>
-                <Button onClick={() => setIsCreateProjectModalOpen(true)} className="bg-[#1D4F6D] hover:bg-[#163a50] text-white">Create Project</Button>
+                {!isSuperAdmin && (
+                  <Button onClick={() => setIsCreateProjectModalOpen(true)} className="bg-[#1D4F6D] hover:bg-[#163a50] text-white">Create Project</Button>
+                )}
               </div>
             </div>
             <ProjectTable data={companyProjects} />

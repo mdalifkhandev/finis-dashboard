@@ -28,7 +28,7 @@ export function ProjectStructure({ projectType = 'apartment_building', initialFl
   const totalTasks = hasAnalysis
     ? checklist.reduce((sum: number, item: any) => sum + (item.taskCounts?.total || item.tasks?.length || 0), 0)
     : initialFloors.reduce(
-        (sum, floor) => sum + (floor.tasks?.length ?? 0) + (floor.rooms?.reduce((roomSum, room) => roomSum + (room.tasks?.length ?? 0), 0) ?? 0),
+        (sum, floor) => sum + (floor.taskCounts?.total ?? ((floor.tasks?.length ?? 0) + (floor.rooms?.reduce((roomSum, room) => roomSum + (room.taskCounts?.total ?? room.tasks?.length ?? 0), 0) ?? 0))),
         0,
       );
 
@@ -37,11 +37,11 @@ export function ProjectStructure({ projectType = 'apartment_building', initialFl
     : initialFloors.reduce(
         (sum, floor) =>
           sum +
-          (floor.tasks?.filter((task) => task.status === 'completed').length ?? 0) +
+          (floor.taskCounts?.completed ?? ((floor.tasks?.filter((task) => task.status === 'completed').length ?? 0) +
           (floor.rooms?.reduce(
-            (roomSum, room) => roomSum + (room.tasks?.filter((task) => task.status === 'completed').length ?? 0),
+            (roomSum, room) => roomSum + (room.taskCounts?.completed ?? room.tasks?.filter((task) => task.status === 'completed').length ?? 0),
             0,
-          ) ?? 0),
+          ) ?? 0))),
         0,
       );
       
@@ -156,15 +156,15 @@ export function ProjectStructure({ projectType = 'apartment_building', initialFl
             
             const taskCount = isChecklist 
               ? (item.taskCounts?.total || item.tasks?.length || 0)
-              : (floor.tasks?.length ?? 0) + (floor.rooms?.reduce((sum: number, room: any) => sum + (room.tasks?.length ?? 0), 0) ?? 0);
+              : (floor.taskCounts?.total ?? ((floor.tasks?.length ?? 0) + (floor.rooms?.reduce((sum: number, room: any) => sum + (room.taskCounts?.total ?? room.tasks?.length ?? 0), 0) ?? 0)));
               
             const completed = isChecklist
               ? (item.taskCounts?.completed || 0)
-              : (floor.tasks?.filter((task: any) => task.status === 'completed').length ?? 0) +
+              : (floor.taskCounts?.completed ?? ((floor.tasks?.filter((task: any) => task.status === 'completed').length ?? 0) +
                 (floor.rooms?.reduce(
-                  (sum: number, room: any) => sum + (room.tasks?.filter((task: any) => task.status === 'completed').length ?? 0),
+                  (sum: number, room: any) => sum + (room.taskCounts?.completed ?? room.tasks?.filter((task: any) => task.status === 'completed').length ?? 0),
                   0,
-                ) ?? 0);
+                ) ?? 0)));
 
             const floorId = isChecklist ? item.floorId : floor.id;
             const floorName = isChecklist ? item.floorName : floor.name;
@@ -226,8 +226,8 @@ export function ProjectStructure({ projectType = 'apartment_building', initialFl
                         <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Units</p>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                           {floor.rooms.map((room: any) => {
-                            const roomTasks = room.tasks?.length ?? 0;
-                            const roomCompleted = room.tasks?.filter((task: any) => task.status === 'completed').length ?? 0;
+                            const roomTasks = room.taskCounts?.total ?? room.tasks?.length ?? 0;
+                            const roomCompleted = room.taskCounts?.completed ?? room.tasks?.filter((task: any) => task.status === 'completed').length ?? 0;
                             const roomProgress = roomTasks > 0 ? Math.round((roomCompleted / roomTasks) * 100) : 0;
 
                             return (

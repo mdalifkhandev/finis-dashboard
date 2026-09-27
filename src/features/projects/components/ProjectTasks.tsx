@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Plus, CheckSquare, Clock, MoreVertical, Edit, Edit2, UserPlus, Trash2, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { useAppSelector } from '@/store/hooks';
+import { selectAuthUser } from '@/store/authSlice';
 import { buildRoute } from '@/config/routes';
 import { Card } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
@@ -16,6 +18,8 @@ import { useProjectTeam, useProjectFloors } from '../hooks/useProjects';
 
 export function ProjectTasks() {
     const { id: projectId } = useParams();
+    const authUser = useAppSelector(selectAuthUser);
+    const isSuperAdmin = authUser?.role === 'super_admin';
     const { data: tasks, isLoading } = useTasks(projectId ?? '');
     const { createTask, isCreating } = useCreateTask();
     const { assignTask, isAssigning } = useAssignTask();
@@ -162,10 +166,12 @@ export function ProjectTasks() {
                     <h2 className="text-xl font-bold text-gray-900">Project Tasks</h2>
                     <p className="text-xs text-gray-500 mt-1 uppercase tracking-tight font-bold">Manage tasks and assignments</p>
                 </div>
-                <Button onClick={() => setIsAddModalOpen(true)} className="gap-2 h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white shadow-md">
-                    <Plus className="h-4 w-4" />
-                    Create Task
-                </Button>
+                {!isSuperAdmin && (
+                    <Button onClick={() => setIsAddModalOpen(true)} className="gap-2 h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white shadow-md">
+                        <Plus className="h-4 w-4" />
+                        Create Task
+                    </Button>
+                )}
             </div>
 
             {/* Task Definition Modal */}
@@ -375,6 +381,7 @@ export function ProjectTasks() {
                         <ProjectTaskCard
                             key={task.id}
                             task={task}
+                            isSuperAdmin={isSuperAdmin}
                             onEdit={openEditModal}
                             onAssign={openAssignModal}
                             onDelete={(t) => { setDeleteTaskId(t.id); setIsDeleteModalOpen(true); }}
@@ -509,7 +516,7 @@ export function ProjectTasks() {
     );
 }
 
-function ProjectTaskCard({ task, onEdit, onAssign, onDelete, onAddSubtask }: { task: any, onEdit: (t: any) => void, onAssign: (t: any) => void, onDelete: (t: any) => void, onAddSubtask: (t: any) => void }) {
+function ProjectTaskCard({ task, isSuperAdmin, onEdit, onAssign, onDelete, onAddSubtask }: { task: any, isSuperAdmin: boolean, onEdit: (t: any) => void, onAssign: (t: any) => void, onDelete: (t: any) => void, onAddSubtask: (t: any) => void }) {
     const navigate = useNavigate();
     const { data: subtasksRaw, isLoading } = useSubTasks(task.id);
     const subtasks = (subtasksRaw as any)?.data || (Array.isArray(subtasksRaw) ? subtasksRaw : []);
@@ -533,7 +540,9 @@ function ProjectTaskCard({ task, onEdit, onAssign, onDelete, onAddSubtask }: { t
                                         <MoreVertical className="h-4 w-4" />
                                     </button>
                                 }
-                                items={[
+                                items={isSuperAdmin ? [
+                                    { label: 'Full Details', icon: ExternalLink, onClick: () => navigate(buildRoute.taskDetail(task.projectId || task.project?.id, task.id)) },
+                                ] : [
                                     { label: 'Edit Task', icon: Edit, onClick: () => onEdit(task) },
                                     { label: 'Full Details', icon: ExternalLink, onClick: () => navigate(buildRoute.taskDetail(task.projectId || task.project?.id, task.id)) },
                                     { label: 'Delete Task', icon: Trash2, variant: 'destructive', onClick: () => onDelete(task) }
@@ -627,24 +636,26 @@ function ProjectTaskCard({ task, onEdit, onAssign, onDelete, onAddSubtask }: { t
                     </div>
                 )}
 
-                <div className="pt-4 border-t border-gray-100 flex gap-2">
-                    <Button
-                        variant="outline"
-                        className="flex-1 text-xs font-bold gap-2 border-gray-200 text-gray-700 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50"
-                        onClick={() => onAssign(task)}
-                    >
-                        <Plus className="h-3.5 w-3.5" />
-                        Assign Worker
-                    </Button>
-                    <Button
-                        variant="outline"
-                        className="flex-1 text-xs font-bold gap-2 border-gray-200 text-gray-700 hover:text-purple-600 hover:border-purple-200 hover:bg-purple-50"
-                        onClick={() => onAddSubtask(task)}
-                    >
-                        <Plus className="h-3.5 w-3.5" />
-                        Subtask
-                    </Button>
-                </div>
+                {!isSuperAdmin && (
+                    <div className="pt-4 border-t border-gray-100 flex gap-2">
+                        <Button
+                            variant="outline"
+                            className="flex-1 text-xs font-bold gap-2 border-gray-200 text-gray-700 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50"
+                            onClick={() => onAssign(task)}
+                        >
+                            <Plus className="h-3.5 w-3.5" />
+                            Assign Worker
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="flex-1 text-xs font-bold gap-2 border-gray-200 text-gray-700 hover:text-purple-600 hover:border-purple-200 hover:bg-purple-50"
+                            onClick={() => onAddSubtask(task)}
+                        >
+                            <Plus className="h-3.5 w-3.5" />
+                            Subtask
+                        </Button>
+                    </div>
+                )}
             </div>
         </Card>
     );
