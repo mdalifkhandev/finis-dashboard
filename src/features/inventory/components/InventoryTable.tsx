@@ -1,4 +1,4 @@
-import { ArrowRightLeft, AlertCircle } from 'lucide-react';
+import { ArrowRightLeft, AlertCircle, PlusCircle, Edit3, Trash2 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
 import { InventoryItem } from '@/shared/types/entities';
@@ -8,9 +8,12 @@ interface InventoryTableProps {
     searchQuery: string;
     onLogUsage: (item: InventoryItem) => void;
     onReportDamage: (item: InventoryItem) => void;
+    onRestock?: (item: InventoryItem) => void;
+    onEdit?: (item: InventoryItem) => void;
+    onDelete?: (item: InventoryItem) => void;
 }
 
-export function InventoryTable({ items, searchQuery, onLogUsage, onReportDamage }: InventoryTableProps) {
+export function InventoryTable({ items, searchQuery, onLogUsage, onReportDamage, onRestock, onEdit, onDelete }: InventoryTableProps) {
     const filteredItems = items.filter(item =>
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.category?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -68,26 +71,58 @@ export function InventoryTable({ items, searchQuery, onLogUsage, onReportDamage 
                                 </Badge>
                             </td>
                             <td className="px-6 py-4 text-right">
-                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
+                                    {onRestock && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 px-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 gap-1 font-bold text-xs"
+                                            title="Add Stock / Restock"
+                                            onClick={() => onRestock(item)}
+                                        >
+                                            <PlusCircle className="h-3.5 w-3.5" /> + Stock
+                                        </Button>
+                                    )}
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-8 px-2 text-blue-600 hover:bg-blue-50 gap-1.5 font-bold text-xs"
+                                        className="h-8 px-2 text-blue-600 hover:bg-blue-50 gap-1 font-bold text-xs"
                                         title="Log Usage"
                                         onClick={() => onLogUsage(item)}
                                     >
                                         <ArrowRightLeft className="h-3.5 w-3.5" /> Usage
                                     </Button>
+                                    {onEdit && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 px-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 gap-1 font-bold text-xs"
+                                            title="Edit Product & Quantity"
+                                            onClick={() => onEdit(item)}
+                                        >
+                                            <Edit3 className="h-3.5 w-3.5" /> Edit
+                                        </Button>
+                                    )}
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-8 px-2 text-red-600 hover:bg-red-50 gap-1.5 font-bold text-xs"
+                                        className="h-8 px-2 text-orange-600 hover:bg-orange-50 gap-1 font-bold text-xs"
                                         title="Report Damage"
                                         onClick={() => onReportDamage(item)}
                                     >
                                         <AlertCircle className="h-3.5 w-3.5" /> Damage
                                     </Button>
-
+                                    {onDelete && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 px-2 text-gray-400 hover:text-red-600 hover:bg-red-50 font-bold text-xs"
+                                            title="Delete Product"
+                                            onClick={() => onDelete(item)}
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                    )}
                                 </div>
                             </td>
                         </tr>

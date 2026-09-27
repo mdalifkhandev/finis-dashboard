@@ -28,7 +28,7 @@ export function PayrollPage() {
       />
 
       <div className="mt-6">
-        {activeTab === 'overview' && <PayrollDashboard />}
+        {activeTab === 'overview' && <PayrollDashboard onNavigateTab={setActiveTab} />}
         {activeTab === 'reports' && <PayrollReportList />}
         {activeTab === 'settings' && <PayrollSettingsForm />}
       </div>

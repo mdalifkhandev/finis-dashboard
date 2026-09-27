@@ -148,7 +148,13 @@ export const inventoryApi = createApi({
     endpoints: (builder) => ({
         getProjects: builder.query<ProjectOption[], void>({
             query: () => ({ url: '/inventory/projects' }),
-            transformResponse: (response: ApiEnvelope<ProjectOption[]> | ProjectOption[]) => unwrap<ProjectOption[]>(response),
+            transformResponse: (response: any) => {
+                if (Array.isArray(response)) return response;
+                if (response?.data?.projects && Array.isArray(response.data.projects)) return response.data.projects;
+                if (response?.projects && Array.isArray(response.projects)) return response.projects;
+                if (response?.data && Array.isArray(response.data)) return response.data;
+                return [];
+            },
             providesTags: ['Inventory'],
         }),
         getSummary: builder.query<InventorySummaryResponse, { projectId?: string } | void>({

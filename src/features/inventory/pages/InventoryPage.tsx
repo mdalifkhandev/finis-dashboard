@@ -8,10 +8,11 @@ import { InventoryTable } from '@/features/inventory/components/InventoryTable';
 import { DamageLogView } from '@/features/inventory/components/DamageLogView';
 import { UsageLogTable } from '@/features/inventory/components/UsageLogTable';
 import { AddProductModal } from '@/features/inventory/components/AddProductModal';
-import { LogUsageModal, ReportDamageModal } from '@/features/inventory/components/ActionModals';
+import { LogUsageModal, ReportDamageModal, RestockModal, EditProductModal } from '@/features/inventory/components/ActionModals';
 import {
     useCreateDamageMutation,
     useCreateItemMutation,
+    useDeleteItemMutation,
     useGetDamageReportsQuery,
     useGetInventoryDetailsQuery,
     useGetInventoryItemsQuery,
@@ -19,6 +20,7 @@ import {
     useGetSummaryQuery,
     useGetUsageHistoryQuery,
     useUpdateDamageStatusMutation,
+    useUpdateItemMutation,
     useUpdateStockMutation,
     type DamageResponse,
     type InventoryItemResponse,
@@ -33,9 +35,11 @@ type InventoryRow = InventoryItem & { projectId: string; currentQty: number; min
 const asArray = <T,>(value: unknown): T[] => {
     if (Array.isArray(value)) return value as T[];
     if (value && typeof value === 'object') {
-        const nested = (value as { data?: unknown; items?: unknown; records?: unknown }).data
-            ?? (value as { data?: unknown; items?: unknown; records?: unknown }).items
-            ?? (value as { data?: unknown; items?: unknown; records?: unknown }).records;
+        const nested = (value as any).projects
+            ?? (value as any).data?.projects
+            ?? (value as any).data
+            ?? (value as any).items
+            ?? (value as any).records;
         if (Array.isArray(nested)) return nested as T[];
     }
     return [];
@@ -62,7 +66,7 @@ const mapInventoryItem = (item: InventoryItemResponse): InventoryRow => ({
     status: mapStatus(item.stockStatus),
     category: item.category ?? undefined,
     lastUpdated: item.updatedAt,
-    projectId: item.project.id,
+    projectId: item.project?.id || (item as any).projectId || '',
     currentQty: item.currentQty,
     minStockQty: item.minStockQty,
 });
@@ -70,11 +74,11 @@ const mapInventoryItem = (item: InventoryItemResponse): InventoryRow => ({
 const mapUsageLog = (log: UsageLogResponse): InventoryLog => ({
     id: log.id,
     itemId: log.inventoryId,
-    itemName: log.inventory.name,
+    itemName: log.inventory?.name ?? 'Unknown',
     quantityMoved: log.qtyChange,
     type: log.qtyChange < 0 ? 'usage' : 'restock',
-    projectId: log.projectId ?? log.inventory.project.id,
-    projectName: log.inventory.project.name,
+    projectId: log.projectId ?? log.inventory?.project?.id ?? '',
+    projectName: log.inventory?.project?.name ?? 'Unknown',
     taskName: undefined,
     handledBy: log.userId,
     handledByName: log.user?.fullName ?? 'Unknown',
@@ -85,15 +89,15 @@ const mapUsageLog = (log: UsageLogResponse): InventoryLog => ({
 const mapDamageReport = (report: DamageResponse): DamageReport => ({
     id: report.id,
     itemId: report.inventoryId,
-    itemName: report.inventory.name,
+    itemName: report.inventory?.name ?? 'Unknown',
     quantity: report.qtyDamaged,
     photoUrl: report.photoUrl ?? undefined,
     notes: report.description ?? '',
     reportedBy: report.reportedBy,
     reportedByName: 'Current User',
     accountability: 'Unknown',
-    projectId: report.inventory.project.id,
-    projectName: report.inventory.project.name,
+    projectId: report.inventory?.project?.id ?? '',
+    projectName: report.inventory?.project?.name ?? 'Unknown',
     timestamp: report.reportedAt,
     status: report.status === 'resolved' ? 'resolved' : 'pending',
 });
@@ -107,6 +111,8 @@ export function InventoryPage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isUsageModalOpen, setIsUsageModalOpen] = useState(false);
     const [isDamageModalOpen, setIsDamageModalOpen] = useState(false);
+    const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<InventoryRow | null>(null);
 
     const isSuperAdmin = authUser?.role === 'super_admin';
@@ -146,20 +152,34 @@ export function InventoryPage() {
     });
 
     const [createItem] = useCreateItemMutation();
+    const [updateItem] = useUpdateItemMutation();
     const [updateStock] = useUpdateStockMutation();
+    const [deleteItem] = useDeleteItemMutation();
     const [createDamage] = useCreateDamageMutation();
     const [updateDamageStatus] = useUpdateDamageStatusMutation();
 
     const items = useMemo(
-        () => asArray<InventoryItemResponse>(isSuperAdmin ? detailsData?.inventory?.data : inventoryData?.data).map(mapInventoryItem),
+        () => asArray<InventoryItemResponse>(
+            isSuperAdmin
+                ? (detailsData?.inventory?.data ?? detailsData?.inventory)
+                : ((inventoryData as any)?.data ?? inventoryData)
+        ).map(mapInventoryItem),
         [detailsData, inventoryData, isSuperAdmin],
     );
     const logs = useMemo(
-        () => asArray<UsageLogResponse>(isSuperAdmin ? detailsData?.usageHistory?.data : usageData?.data).map(mapUsageLog),
+        () => asArray<UsageLogResponse>(
+            isSuperAdmin
+                ? (detailsData?.usageHistory?.data ?? detailsData?.usageHistory)
+                : ((usageData as any)?.data ?? usageData)
+        ).map(mapUsageLog),
         [detailsData, usageData, isSuperAdmin],
     );
     const reports = useMemo(
-        () => asArray<DamageResponse>(isSuperAdmin ? detailsData?.damages?.data : damageData?.data).map(mapDamageReport),
+        () => asArray<DamageResponse>(
+            isSuperAdmin
+                ? (detailsData?.damages?.data ?? detailsData?.damages)
+                : ((damageData as any)?.data ?? damageData)
+        ).map(mapDamageReport),
         [detailsData, damageData, isSuperAdmin],
     );
     const summaryData = isSuperAdmin ? detailsData?.summary : summary;
@@ -168,6 +188,53 @@ export function InventoryPage() {
     const handleAddProduct = async (newItem: { projectId: string; name: string; category?: string; location?: string; currentQty?: number; minStockQty?: number; unit?: string }) => {
         await createItem(newItem).unwrap();
         setIsAddModalOpen(false);
+    };
+
+    const handleRestock = async (restock: { itemId: string; quantity: number; notes?: string }) => {
+        if (!selectedItem) return;
+        await updateStock({
+            projectId: selectedItem.projectId,
+            id: selectedItem.id,
+            body: {
+                quantity: Math.abs(restock.quantity),
+                reason: restock.notes,
+            },
+        }).unwrap();
+        setIsRestockModalOpen(false);
+    };
+
+    const handleEditProduct = async (updated: {
+        id: string;
+        name: string;
+        category?: string;
+        currentQty: number;
+        minStockQty: number;
+        unit?: string;
+    }) => {
+        if (!selectedItem) return;
+        await updateItem({
+            projectId: selectedItem.projectId,
+            id: selectedItem.id,
+            body: {
+                name: updated.name,
+                category: updated.category,
+                currentQty: updated.currentQty,
+                minStockQty: updated.minStockQty,
+                unit: updated.unit,
+            },
+        }).unwrap();
+        setIsEditModalOpen(false);
+    };
+
+    const handleDeleteProduct = async (item: InventoryItem) => {
+        const row = items.find((i) => i.id === item.id) ?? (item as InventoryRow);
+        if (!row.projectId) return;
+        if (window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
+            await deleteItem({
+                projectId: row.projectId,
+                id: item.id,
+            }).unwrap();
+        }
     };
 
     const handleLogUsage = async (usage: { itemId: string; quantity: number; projectId?: string; taskName?: string; notes?: string }) => {
@@ -315,6 +382,17 @@ export function InventoryPage() {
                         <InventoryTable
                             items={items}
                             searchQuery={searchQuery}
+                            onRestock={(item) => {
+                                const row = items.find((i) => i.id === item.id) ?? (item as InventoryRow);
+                                setSelectedItem(row);
+                                setIsRestockModalOpen(true);
+                            }}
+                            onEdit={(item) => {
+                                const row = items.find((i) => i.id === item.id) ?? (item as InventoryRow);
+                                setSelectedItem(row);
+                                setIsEditModalOpen(true);
+                            }}
+                            onDelete={handleDeleteProduct}
                             onLogUsage={(item) => {
                                 const row = items.find((i) => i.id === item.id) ?? (item as InventoryRow);
                                 setSelectedItem(row);
@@ -341,7 +419,7 @@ export function InventoryPage() {
                 </div>
             </div>
 
-                <AddProductModal
+            <AddProductModal
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
                 projects={projectsData}
@@ -350,6 +428,18 @@ export function InventoryPage() {
 
             {selectedItem && (
                 <>
+                    <RestockModal
+                        isOpen={isRestockModalOpen}
+                        onClose={() => setIsRestockModalOpen(false)}
+                        item={selectedItem}
+                        onRestock={handleRestock}
+                    />
+                    <EditProductModal
+                        isOpen={isEditModalOpen}
+                        onClose={() => setIsEditModalOpen(false)}
+                        item={selectedItem}
+                        onUpdate={handleEditProduct}
+                    />
                     <LogUsageModal
                         isOpen={isUsageModalOpen}
                         onClose={() => setIsUsageModalOpen(false)}

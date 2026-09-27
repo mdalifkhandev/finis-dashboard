@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '@/shared/components/ui/Modal';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
@@ -17,6 +17,13 @@ export function AddProductModal({ isOpen, onClose, onAdd, projects }: AddProduct
     const [quantity, setQuantity] = useState('');
     const [unitType, setUnitType] = useState('Units');
     const [threshold, setThreshold] = useState('5');
+
+    // Auto-select if there is only 1 project
+    useEffect(() => {
+        if (projects.length === 1 && (!projectId || !projects.some(p => p.id === projectId))) {
+            setProjectId(projects[0].id);
+        }
+    }, [projects, projectId]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -48,13 +55,22 @@ export function AddProductModal({ isOpen, onClose, onAdd, projects }: AddProduct
                         required
                         className="w-full h-11 rounded-xl border border-gray-200 bg-white px-3 text-sm outline-none focus:border-blue-400"
                     >
-                        <option value="">Select a project</option>
+                        {projects.length === 0 ? (
+                            <option value="">No projects found</option>
+                        ) : (
+                            <option value="">Select a project</option>
+                        )}
                         {projects.map((project) => (
                             <option key={project.id} value={project.id}>
                                 {project.name}
                             </option>
                         ))}
                     </select>
+                    {projects.length === 0 && (
+                        <p className="text-xs text-amber-600 mt-1">
+                            No projects found for your company. Please create a project first.
+                        </p>
+                    )}
                 </div>
                 <div>
                     <label className="text-sm font-bold text-gray-700 block mb-1">Product Name</label>

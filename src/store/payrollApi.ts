@@ -33,6 +33,7 @@ export interface PayrollConfig {
 }
 
 export interface UpdatePayrollConfigDto {
+  period?: string;
   cppEmployeeRate?: number;
   cppEmployerRate?: number;
   eiEmployeeRate?: number;
@@ -49,12 +50,42 @@ export interface PayrollDashboardData {
     totalDeductions: number;
     totalNetPay: number;
     totalEmployerCost: number;
+    payrollPeriod?: string;
   };
   monthlyTrends: Array<{
     month: string;
     grossPay: number;
     deductions: number;
     netPay: number;
+  }>;
+  currentPeriod?: {
+    period: string;
+    workers: number;
+    pending: number;
+    status: string;
+  };
+  deductionRates?: {
+    cppEmployee: string;
+    eiEmployee: string;
+    federalTax: string;
+    provincialTax: string;
+  };
+  employerRates?: {
+    cppEmployer: string;
+    eiEmployer: string;
+    wsib: string;
+    vacationPay: string;
+  };
+  recentRecords?: Array<{
+    payrollId: string;
+    company?: { id: string; name: string };
+    worker?: { id: string; fullName: string; avatarUrl?: string; department?: string };
+    period: string;
+    hours: number;
+    grossPay: number;
+    deductions: number;
+    netPay: number;
+    status: string;
   }>;
 }
 
@@ -66,22 +97,37 @@ export interface PayrollReportParams {
 }
 
 export interface PayrollReportData {
-  reportDate: string;
+  reportDate?: string;
+  reportGeneratedAt?: string;
   startDate: string;
   endDate: string;
-  companies: string[];
+  companies?: string[];
   totalGrossPay: number;
   totalDeductions: number;
   totalNetPay: number;
   totalEmployerCost: number;
+  summary?: {
+    totalWorkers: number;
+    totalGrossPay: number;
+    totalDeductions: number;
+    totalNetPay: number;
+    totalEmployerCost: number;
+  };
+  period?: {
+    start: string | Date;
+    end: string | Date;
+    type: string;
+  };
   workers: Array<{
+    payrollId?: string;
     workerId: string;
     workerName: string;
-    companies: string[];
+    companies?: string[];
     role: string;
     totalHours: number;
     grossPay: number;
     netPay: number;
+    status?: string;
     deductions: {
       cppEmployee: string;
       eiEmployee: string;
@@ -98,6 +144,7 @@ export interface PayrollReportData {
     };
     totalEmployerCost: number;
   }>;
+  records?: any[];
 }
 
 export interface PayWorkerPayrollPayload {
@@ -159,6 +206,13 @@ export const payrollApi = createApi({
       }),
       invalidatesTags: ['PayrollConfig', 'PayrollDashboard', 'PayrollReport'],
     }),
+    resetPayrollConfig: builder.mutation<{ message: string; config: PayrollConfig }, void>({
+      query: () => ({
+        url: '/config/reset',
+        method: 'PUT',
+      }),
+      invalidatesTags: ['PayrollConfig', 'PayrollDashboard', 'PayrollReport'],
+    }),
     getPayrollDashboard: builder.query<PayrollDashboardData, { period?: string; startDate?: string; endDate?: string }>({
       query: (params) => ({
         url: '/dashboard',
@@ -173,6 +227,10 @@ export const payrollApi = createApi({
         method: 'POST',
         body,
       }),
+      transformResponse: (response: any) => {
+        if (response && response.data) return response.data;
+        return response;
+      },
     }),
     getWorkerPayrolls: builder.query<WorkerPayrollItem[], string>({
       query: (workerId) => `/worker/${workerId}`,
@@ -212,6 +270,7 @@ export const payrollApi = createApi({
 export const {
   useGetPayrollConfigQuery,
   useUpdatePayrollConfigMutation,
+  useResetPayrollConfigMutation,
   useGetPayrollDashboardQuery,
   useGeneratePayrollReportMutation,
   useGetWorkerPayrollsQuery,
