@@ -100,6 +100,38 @@ export interface PayrollReportData {
   }>;
 }
 
+export interface PayWorkerPayrollPayload {
+  workerId: string;
+  payPeriodStart: string;
+  payPeriodEnd: string;
+  hours?: number;
+  ratePerHour?: number;
+  grossPay?: number;
+  deductions?: number;
+  netPay?: number;
+  paymentMethod?: string;
+  notes?: string;
+  payrollId?: string;
+}
+
+export interface WorkerPayrollItem {
+  id: string;
+  companyId: string;
+  workerId: string;
+  payPeriodStart: string;
+  payPeriodEnd: string;
+  regularHours: number;
+  overtimeHours: number;
+  ratePerHour: number;
+  grossPay: number;
+  deductions: number;
+  netPay: number;
+  status: 'draft' | 'approved' | 'paid';
+  processedAt?: string | null;
+  processedBy?: string | null;
+  createdAt: string;
+}
+
 export const payrollApi = createApi({
   reducerPath: 'payrollApi',
   baseQuery: fetchBaseQuery({
@@ -112,7 +144,7 @@ export const payrollApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['PayrollConfig', 'PayrollDashboard', 'PayrollReport'],
+  tagTypes: ['PayrollConfig', 'PayrollDashboard', 'PayrollReport', 'PayrollRecord'],
   endpoints: (builder) => ({
     getPayrollConfig: builder.query<PayrollConfig, void>({
       query: () => '/config',
@@ -142,6 +174,38 @@ export const payrollApi = createApi({
         body,
       }),
     }),
+    getWorkerPayrolls: builder.query<WorkerPayrollItem[], string>({
+      query: (workerId) => `/worker/${workerId}`,
+      transformResponse: (response: any) => {
+        if (response && Array.isArray(response.data)) return response.data;
+        if (Array.isArray(response)) return response;
+        return [];
+      },
+      providesTags: (_result, _error, workerId) => [{ type: 'PayrollRecord', id: workerId }],
+    }),
+    payWorkerPayroll: builder.mutation<{ success: boolean; message: string; payroll: WorkerPayrollItem }, PayWorkerPayrollPayload>({
+      query: (body) => ({
+        url: '/pay',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: (_result, _error, { workerId }) => [
+        { type: 'PayrollRecord', id: workerId },
+        'PayrollDashboard',
+        'PayrollReport',
+      ],
+    }),
+    markPayrollPaid: builder.mutation<{ success: boolean; message: string; payroll: WorkerPayrollItem }, { payrollId: string; workerId?: string }>({
+      query: ({ payrollId }) => ({
+        url: `/mark-paid/${payrollId}`,
+        method: 'POST',
+      }),
+      invalidatesTags: (_result, _error, { workerId }) => [
+        ...(workerId ? [{ type: 'PayrollRecord' as const, id: workerId }] : []),
+        'PayrollDashboard',
+        'PayrollReport',
+      ],
+    }),
   }),
 });
 
@@ -150,4 +214,7 @@ export const {
   useUpdatePayrollConfigMutation,
   useGetPayrollDashboardQuery,
   useGeneratePayrollReportMutation,
+  useGetWorkerPayrollsQuery,
+  usePayWorkerPayrollMutation,
+  useMarkPayrollPaidMutation,
 } = payrollApi;

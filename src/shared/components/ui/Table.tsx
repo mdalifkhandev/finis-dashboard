@@ -8,6 +8,7 @@ export interface Column<T> {
   header: string;
   sortable?: boolean;
   render?: (item: T) => React.ReactNode;
+  cell?: (item: T) => React.ReactNode;
   className?: string;
 }
 
@@ -86,7 +87,11 @@ export function Table<T extends {
                 >
                   {columns.map(column => (
                     <td key={`${item.id}-${column.key}`} className="p-4 align-middle [&:has([role=checkbox])]:pr-0">
-                      {column.render ? column.render(item) : (item as any)[column.key]}
+                      {column.render 
+                        ? column.render(item) 
+                        : column.cell 
+                          ? column.cell(item) 
+                          : (item as any)[column.key]}
                     </td>
                   ))}
                 </tr>

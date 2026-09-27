@@ -6,12 +6,16 @@ import { Input } from '@/shared/components/ui/Input';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Table, Column } from '@/shared/components/ui/Table';
 import { Select } from '@/shared/components/ui/Select';
+import { Button } from '@/shared/components/ui/Button';
 import { useGetAttendanceRecordsQuery, useGetAttendanceSummaryQuery } from '@/store/dashboardApi';
 import type { SuperAdminAttendanceRecord } from '@/shared/types';
 
 export function AttendancePage() {
     const today = new Date();
     const todayDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    const yesterdayDate = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
     const [selectedDate, setSelectedDate] = useState(todayDate);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -19,14 +23,17 @@ export function AttendancePage() {
     const { data: summaryData } = useGetAttendanceSummaryQuery({ date: selectedDate });
     const { data: recordsData, isLoading: isRecordsLoading } = useGetAttendanceRecordsQuery({ date: selectedDate, limit: 200 });
 
-    const records = recordsData?.data ?? [];
-    const statsData = summaryData?.stats ?? {
-        total: 0,
-        present: 0,
-        late: 0,
-        absent: 0,
-        activeCheckIns: 0,
-        attendanceRate: 0,
+    const records: SuperAdminAttendanceRecord[] = Array.isArray(recordsData)
+        ? recordsData
+        : (Array.isArray(recordsData?.data) ? recordsData.data : []);
+
+    const statsData = summaryData?.stats ?? recordsData?.stats ?? {
+        total: records.length,
+        present: records.filter(r => r.status === 'present' || r.status === 'late').length,
+        late: records.filter(r => r.status === 'late').length,
+        absent: records.filter(r => r.status === 'absent').length,
+        activeCheckIns: records.filter(r => Boolean(r.session && !r.session.checkOutTime)).length,
+        attendanceRate: records.length > 0 ? Math.round((records.filter(r => r.status === 'present').length / records.length) * 100) : 0,
     };
 
     const filteredRecords = useMemo(() => {
@@ -87,7 +94,7 @@ export function AttendancePage() {
                 <div className="flex items-center gap-2">
                     <div className={`h-2 w-2 rounded-full ${record.session?.checkInTime ? 'bg-green-500' : 'bg-gray-300'}`} />
                     <span className="text-sm font-bold text-gray-700">
-                        {record.session?.checkInTime ? new Date(record.session.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                        {record.session?.checkInTime ? new Date(record.session.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
                     </span>
                 </div>
             )
@@ -99,7 +106,7 @@ export function AttendancePage() {
                 <div className="flex items-center gap-2">
                     <div className={`h-2 w-2 rounded-full ${record.session?.checkOutTime ? 'bg-[#1D4F6D]' : 'bg-gray-300 animate-pulse'}`} />
                     <span className="text-sm font-bold text-gray-700">
-                        {record.session?.checkOutTime ? new Date(record.session.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'In Progress'}
+                        {record.session?.checkOutTime ? new Date(record.session.checkOutTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'In Progress'}
                     </span>
                 </div>
             )
@@ -151,13 +158,37 @@ export function AttendancePage() {
                 description="Live workforce attendance, geo-checkins, and status tracking"
                 icon={Clock}
             >
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2">
                     <Input
                         type="date"
-                        value={selectedDate}
+                        value={selectedDate === 'all' ? '' : selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        className="w-44 text-sm"
+                        className="w-40 text-xs font-bold"
                     />
+                    <Button
+                        variant={selectedDate === todayDate ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setSelectedDate(todayDate)}
+                        className={`text-xs font-bold rounded-xl h-9 ${selectedDate === todayDate ? 'bg-[#1D4F6D] text-white' : ''}`}
+                    >
+                        Today
+                    </Button>
+                    <Button
+                        variant={selectedDate === yesterdayDate ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setSelectedDate(yesterdayDate)}
+                        className={`text-xs font-bold rounded-xl h-9 ${selectedDate === yesterdayDate ? 'bg-[#1D4F6D] text-white' : ''}`}
+                    >
+                        Yesterday
+                    </Button>
+                    <Button
+                        variant={selectedDate === 'all' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setSelectedDate('all')}
+                        className={`text-xs font-bold rounded-xl h-9 ${selectedDate === 'all' ? 'bg-[#1D4F6D] text-white' : ''}`}
+                    >
+                        All Records
+                    </Button>
                 </div>
             </PageHeader>
 

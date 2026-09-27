@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Clock, TrendingUp, Users } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Card } from '@/shared/components/ui/Card';
@@ -15,12 +16,14 @@ export function TimeTrackingPage() {
     const activeTab = searchParams.get('tab') || 'overview';
     const today = new Date();
     const todayDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const [selectedDate, setSelectedDate] = useState<string>(todayDate);
+
     const { data: summary, isLoading: summaryLoading } = useGetAttendanceSummaryQuery(
-        { date: todayDate, page: 1, limit: 20 },
+        { date: selectedDate, page: 1, limit: 20 },
         { pollingInterval: 15000 },
     );
     const { data: records, isLoading: recordsLoading } = useGetAttendanceRecordsQuery(
-        { date: todayDate, page: 1, limit: 100 },
+        { date: selectedDate, page: 1, limit: 100 },
         { pollingInterval: 15000 },
     );
 
@@ -28,13 +31,17 @@ export function TimeTrackingPage() {
         setSearchParams({ tab: tabId });
     };
 
-    const stats = summary?.stats ?? {
-        total: 0,
-        present: 0,
-        late: 0,
-        absent: 0,
-        activeCheckIns: 0,
-        attendanceRate: 0,
+    const attendanceList = Array.isArray(records)
+        ? records
+        : (Array.isArray(records?.data) ? records.data : []);
+
+    const stats = summary?.stats ?? records?.stats ?? {
+        total: attendanceList.length,
+        present: attendanceList.filter(r => r.status === 'present' || r.status === 'late').length,
+        late: attendanceList.filter(r => r.status === 'late').length,
+        absent: attendanceList.filter(r => r.status === 'absent').length,
+        activeCheckIns: attendanceList.filter(r => Boolean(r.session && !r.session.checkOutTime)).length,
+        attendanceRate: attendanceList.length > 0 ? Math.round((attendanceList.filter(r => r.status === 'present').length / attendanceList.length) * 100) : 0,
     };
 
     return (
@@ -134,7 +141,7 @@ export function TimeTrackingPage() {
                         <Card className="p-6">
                             <h3 className="text-lg font-semibold mb-4">Recent Check-Ins</h3>
                             <div className="space-y-3">
-                                {(records?.data ?? []).slice(0, 3).map((entry, index) => (
+                                {attendanceList.slice(0, 3).map((entry, index) => (
                                     <div key={index} className="flex items-center justify-between py-2 border-b">
                                         <div>
                                             <div className="font-medium">{entry.worker.fullName}</div>
@@ -156,9 +163,11 @@ export function TimeTrackingPage() {
             {/* Other Tabs */}
             {activeTab === 'attendance' && (
                 <AttendanceView
-                    attendance={records?.data ?? []}
+                    attendance={attendanceList}
                     loading={recordsLoading}
-                    dateLabel={new Date().toLocaleDateString()}
+                    dateLabel={selectedDate === 'all' ? 'All Dates' : selectedDate}
+                    selectedDate={selectedDate}
+                    onDateChange={setSelectedDate}
                 />
             )}
 

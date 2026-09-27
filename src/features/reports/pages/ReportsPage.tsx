@@ -591,7 +591,7 @@ export function ReportsPage() {
           header: 'Hours',
           render: (record) => (
             <div className="text-sm text-gray-700">
-              {record.totalHours.toFixed(2)}
+              {(record.totalHours ?? 0).toFixed(2)}
             </div>
           ),
         },

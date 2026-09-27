@@ -321,9 +321,9 @@ export function WorkerDetailPage() {
           )}
 
           {activeTab === 'schedule' && <WorkerSchedule worker={worker} />}
-          {activeTab === 'attendance' && <AttendanceCalendar />}
-          {activeTab === 'payroll' && <PayrollHistory />}
-          {activeTab === 'documents' && <WorkerDocuments />}
+          {activeTab === 'attendance' && <AttendanceCalendar worker={worker} />}
+          {activeTab === 'payroll' && <PayrollHistory worker={worker} />}
+          {activeTab === 'documents' && <WorkerDocuments worker={worker} />}
         </div>
       </div>
 

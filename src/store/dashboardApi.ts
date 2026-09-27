@@ -130,12 +130,46 @@ export const dashboardApi = createApi({
                 },
             }),
             transformResponse: (
-                response: ApiEnvelope<SuperAdminAttendanceResponse> | SuperAdminAttendanceResponse,
+                response: any,
             ): SuperAdminAttendanceResponse => {
-                if ('success' in response && 'data' in response) {
-                    return response.data;
+                if (response && 'stats' in response && 'data' in response) {
+                    return {
+                        stats: response.stats,
+                        data: Array.isArray(response.data) ? response.data : [],
+                        meta: response.meta ?? {
+                            total: response.stats?.total ?? (Array.isArray(response.data) ? response.data.length : 0),
+                            page: 1,
+                            limit: 100,
+                            totalPages: 1,
+                        },
+                    };
                 }
-                return response as SuperAdminAttendanceResponse;
+                if (response?.data && typeof response.data === 'object' && 'stats' in response.data && 'data' in response.data) {
+                    return response.data as SuperAdminAttendanceResponse;
+                }
+                if (response && typeof response === 'object' && 'stats' in response) {
+                    return response as SuperAdminAttendanceResponse;
+                }
+                const dataList = Array.isArray(response)
+                    ? response
+                    : (Array.isArray(response?.data) ? response.data : []);
+                return {
+                    stats: response?.stats ?? {
+                        total: dataList.length,
+                        present: dataList.length,
+                        late: 0,
+                        absent: 0,
+                        activeCheckIns: 0,
+                        attendanceRate: dataList.length > 0 ? 100 : 0,
+                    },
+                    data: dataList,
+                    meta: response?.meta ?? {
+                        total: dataList.length,
+                        page: 1,
+                        limit: 100,
+                        totalPages: 1,
+                    },
+                };
             },
             providesTags: ['Dashboard'],
         }),
@@ -147,12 +181,46 @@ export const dashboardApi = createApi({
                 },
             }),
             transformResponse: (
-                response: ApiEnvelope<SuperAdminAttendanceResponse> | SuperAdminAttendanceResponse,
+                response: any,
             ): SuperAdminAttendanceResponse => {
-                if ('success' in response && 'data' in response) {
-                    return response.data;
+                if (response && 'stats' in response && 'data' in response) {
+                    return {
+                        stats: response.stats,
+                        data: Array.isArray(response.data) ? response.data : [],
+                        meta: response.meta ?? {
+                            total: response.stats?.total ?? (Array.isArray(response.data) ? response.data.length : 0),
+                            page: 1,
+                            limit: 100,
+                            totalPages: 1,
+                        },
+                    };
                 }
-                return response as SuperAdminAttendanceResponse;
+                if (response?.data && typeof response.data === 'object' && 'stats' in response.data && 'data' in response.data) {
+                    return response.data as SuperAdminAttendanceResponse;
+                }
+                if (response && typeof response === 'object' && 'stats' in response) {
+                    return response as SuperAdminAttendanceResponse;
+                }
+                const dataList = Array.isArray(response)
+                    ? response
+                    : (Array.isArray(response?.data) ? response.data : []);
+                return {
+                    stats: response?.stats ?? {
+                        total: dataList.length,
+                        present: dataList.length,
+                        late: 0,
+                        absent: 0,
+                        activeCheckIns: 0,
+                        attendanceRate: dataList.length > 0 ? 100 : 0,
+                    },
+                    data: dataList,
+                    meta: response?.meta ?? {
+                        total: dataList.length,
+                        page: 1,
+                        limit: 100,
+                        totalPages: 1,
+                    },
+                };
             },
             providesTags: ['Dashboard'],
         }),

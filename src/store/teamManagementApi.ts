@@ -143,6 +143,30 @@ export interface ManagerListParams {
     status?: string;
 }
 
+export interface WorkerDocumentItem {
+    id: string;
+    name: string;
+    category: string;
+    date: string;
+    size: string;
+    status: string;
+    url?: string;
+    source?: 'document' | 'certification';
+    uploadedAt?: string;
+}
+
+export interface UploadWorkerDocumentPayload {
+    workerId: string;
+    file: File;
+    category?: string;
+    name?: string;
+}
+
+export interface DeleteWorkerDocumentPayload {
+    workerId: string;
+    documentId: string;
+}
+
 
 // ── API ───────────────────────────────────────────────────────────────────────
 
@@ -158,7 +182,7 @@ export const teamManagementApi = createApi({
             return headers;
         },
     }),
-    tagTypes: ['AdminStats', 'ManagerStats', 'WorkforceStats', 'PendingInvitations', 'AdminList', 'AdminDetail', 'ManagerList'],
+    tagTypes: ['AdminStats', 'ManagerStats', 'WorkforceStats', 'PendingInvitations', 'AdminList', 'AdminDetail', 'ManagerList', 'WorkerDocuments'],
     endpoints: (builder) => ({
 
         // GET /super_admin/team/admins/stats
@@ -275,6 +299,52 @@ export const teamManagementApi = createApi({
             transformResponse: (res: ApiEnvelope<ManagerUser[]>) => res.data,
             providesTags: ['ManagerList'],
         }),
+
+        // GET /super_admin/team/users/:id/documents
+        getWorkerDocuments: builder.query<WorkerDocumentItem[], { workerId: string; search?: string; category?: string } | string>({
+            query: (arg) => {
+                const workerId = typeof arg === 'string' ? arg : arg.workerId;
+                const search = typeof arg === 'object' ? arg.search : undefined;
+                const category = typeof arg === 'object' ? arg.category : undefined;
+                return {
+                    url: `/super_admin/team/users/${workerId}/documents`,
+                    params: {
+                        ...(search ? { search } : {}),
+                        ...(category && category !== 'all' ? { category } : {}),
+                    },
+                };
+            },
+            transformResponse: (res: any) => (Array.isArray(res) ? res : res?.data ?? []),
+            providesTags: ['WorkerDocuments'],
+        }),
+
+        // POST /super_admin/team/users/:id/documents
+        uploadWorkerDocument: builder.mutation<WorkerDocumentItem, UploadWorkerDocumentPayload>({
+            query: ({ workerId, file, category, name }) => {
+                const formData = new FormData();
+                formData.append('file', file);
+                if (category) formData.append('category', category);
+                if (name) formData.append('name', name);
+
+                return {
+                    url: `/super_admin/team/users/${workerId}/documents`,
+                    method: 'POST',
+                    body: formData,
+                };
+            },
+            transformResponse: (res: any) => res?.data ?? res,
+            invalidatesTags: ['WorkerDocuments', 'AdminDetail'],
+        }),
+
+        // DELETE /super_admin/team/users/:id/documents/:documentId
+        deleteWorkerDocument: builder.mutation<{ message: string }, DeleteWorkerDocumentPayload>({
+            query: ({ workerId, documentId }) => ({
+                url: `/super_admin/team/users/${workerId}/documents/${documentId}`,
+                method: 'DELETE',
+            }),
+            transformResponse: (res: any) => res?.data ?? res,
+            invalidatesTags: ['WorkerDocuments', 'AdminDetail'],
+        }),
     }),
 
 });
@@ -291,4 +361,7 @@ export const {
     useCancelInvitationMutation,
     useUpdateUserStatusMutation,
     useGetManagerListQuery,
+    useGetWorkerDocumentsQuery,
+    useUploadWorkerDocumentMutation,
+    useDeleteWorkerDocumentMutation,
 } = teamManagementApi;
