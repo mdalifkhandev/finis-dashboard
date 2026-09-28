@@ -81,6 +81,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           if (!isSuperAdmin && (item.path === '/tenants' || item.path === '/admins')) {
             return false;
           }
+          if (isSuperAdmin && (item.path === '/reports' || item.path === '/quotes')) {
+            return false;
+          }
           return true;
         })
         .map(item => {

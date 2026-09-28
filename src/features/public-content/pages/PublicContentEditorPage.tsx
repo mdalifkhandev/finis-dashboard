@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/sha
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { cn } from '@/shared/utils';
+import { useAppSelector } from '@/store/hooks';
+import { selectAuthUser } from '@/store/authSlice';
 
 const pageMeta: Record<string, { label: string; description: string; accent: string }> = {
   'about-us': { label: 'About Us', description: 'Company story and mission.', accent: 'from-[#1D4F6D] to-[#3B82F6]' },
@@ -28,10 +30,33 @@ function getElementHtml(element: HTMLElement | null | undefined, fallback = '') 
   return element?.innerHTML ?? fallback;
 }
 
+function FaqAnswerEditor({ content, onChange }: { content: string, onChange: (val: string) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    if (ref.current && ref.current.innerHTML !== content) {
+      ref.current.innerHTML = content;
+    }
+  }, [content]);
+
+  return (
+    <div
+      ref={ref}
+      contentEditable
+      suppressContentEditableWarning
+      className="min-h-[120px] rounded-xl border border-gray-100 p-4 text-sm leading-7 text-gray-800 focus:outline-none"
+      onInput={(e) => onChange(e.currentTarget.innerHTML)}
+    />
+  );
+}
+
 export function PublicContentEditorPage() {
   const { slug = 'about-us' } = useParams();
   const navigate = useNavigate();
   const editorRef = useRef<HTMLDivElement>(null);
+
+  const authUser = useAppSelector(selectAuthUser);
+  const isSuperAdmin = authUser?.role === 'super_admin';
 
   const { data: pages = [], refetch } = useGetPublicContentQuery();
   const { data: pageBySlug } = useGetPublicContentPageQuery(slug);
@@ -155,10 +180,12 @@ export function PublicContentEditorPage() {
               <h2 className="text-xl font-bold text-gray-900">{meta.label}</h2>
             </div>
           </div>
-          <Button variant={isEditing ? 'outline' : 'default'} size="sm" onClick={handleEditToggle} className="gap-2">
-            {isEditing ? <Eye className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
-            {isEditing ? 'View Page' : 'Edit Page'}
-          </Button>
+          {isSuperAdmin && (
+            <Button variant={isEditing ? 'outline' : 'default'} size="sm" onClick={handleEditToggle} className="gap-2">
+              {isEditing ? <Eye className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
+              {isEditing ? 'View Page' : 'Edit Page'}
+            </Button>
+          )}
         </CardContent>
       </Card>
 
@@ -246,12 +273,9 @@ export function PublicContentEditorPage() {
                               onChange={(e) => setSections((current) => current.map((item, i) => i === index ? { ...item, title: e.target.value } : item))}
                               placeholder="Question"
                             />
-                            <div
-                              contentEditable
-                              suppressContentEditableWarning
-                              className="min-h-[120px] rounded-xl border border-gray-100 p-4 text-sm leading-7 text-gray-800 focus:outline-none"
-                              onInput={(e) => setSections((current) => current.map((item, i) => i === index ? { ...item, content: getElementHtml(e.currentTarget as HTMLDivElement, item.content) } : item))}
-                              dangerouslySetInnerHTML={{ __html: section.content }}
+                            <FaqAnswerEditor
+                              content={section.content || ''}
+                              onChange={(val) => setSections((current) => current.map((item, i) => i === index ? { ...item, content: val } : item))}
                             />
                           </div>
                         )}

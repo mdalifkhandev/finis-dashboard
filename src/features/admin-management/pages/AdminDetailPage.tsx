@@ -7,6 +7,7 @@ import { getStatusColor } from '@/shared/utils';
 import {
     useGetAdminDetailQuery,
     useUpdateUserStatusMutation,
+    teamManagementApi,
 } from '@/store/teamManagementApi';
 
 export function AdminDetailPage() {
@@ -20,6 +21,9 @@ export function AdminDetailPage() {
 
     const [updateUserStatus, { isLoading: updatingStatus }] =
         useUpdateUserStatusMutation();
+        
+    const [toggleExemption, { isLoading: togglingExemption }] = 
+        teamManagementApi.useToggleSubscriptionExemptionMutation();
 
     const handleToggleStatus = async () => {
         if (!admin) return;
@@ -28,6 +32,15 @@ export function AdminDetailPage() {
             await updateUserStatus({ id: admin.id, status: newStatus }).unwrap();
         } catch (err) {
             console.error('Status update failed:', err);
+        }
+    };
+
+    const handleToggleExemption = async () => {
+        if (!admin) return;
+        try {
+            await toggleExemption(admin.id).unwrap();
+        } catch (err) {
+            console.error('Toggle exemption failed:', err);
         }
     };
 
@@ -122,7 +135,19 @@ export function AdminDetailPage() {
                     </div>
 
                     {admin.status !== 'suspended' && (
-                        <div className="shrink-0">
+                        <div className="shrink-0 flex gap-3">
+                            <Button
+                                variant={admin.isExemptFromSubscription ? 'default' : 'outline'}
+                                className={admin.isExemptFromSubscription ? 'bg-amber-600 hover:bg-amber-700' : 'border-amber-200 text-amber-700 hover:bg-amber-50'}
+                                disabled={togglingExemption}
+                                onClick={handleToggleExemption}
+                            >
+                                {togglingExemption
+                                    ? 'Updating...'
+                                    : admin.isExemptFromSubscription
+                                    ? 'Revoke Free Access'
+                                    : 'Grant Free Access'}
+                            </Button>
                             <Button
                                 variant="outline"
                                 disabled={updatingStatus}

@@ -5,7 +5,7 @@ import { Button } from '@/shared/components/ui/Button';
 import { Select } from '@/shared/components/ui/Select';
 import { Camera, Building2, Globe, Mail, Phone, MapPin } from 'lucide-react';
 import { Company } from '@/shared/types';
-import { useCreateCompanyMutation, useGetAdminsQuery } from '@/store/companiesApi';
+import { useCreateCompanyMutation, useGetAdminsQuery, useUpdateCompanyMutation } from '@/store/companiesApi';
 import { useMeQuery } from '@/store/authApi';
 
 interface CreateCompanyModalProps {
@@ -30,6 +30,7 @@ const EMPTY_FORM = {
 
 export function CreateCompanyModal({ isOpen, onClose, onCreateCompany }: CreateCompanyModalProps) {
   const [createCompanyMutation, { isLoading: isCreating }] = useCreateCompanyMutation();
+  const [updateCompanyMutation] = useUpdateCompanyMutation();
   const { data: admins } = useGetAdminsQuery({ role: 'admin' });
   const { data: me } = useMeQuery();
 
@@ -123,32 +124,29 @@ export function CreateCompanyModal({ isOpen, onClose, onCreateCompany }: CreateC
     try {
       let created: any;
 
-      if (logoFile) {
+      const payload: CreateCompanyPayload = {
+        name: formData.name.trim(),
+        ownerId: resolvedOwnerId,
+        ...(formData.industry    && { industry:    formData.industry }),
+        ...(formData.description && { description: formData.description }),
+        ...(formData.phone       && { phone:       formData.phone }),
+        ...(formData.email       && { email:       formData.email }),
+        ...(formData.website     && { website:     formData.website }),
+        ...(formData.address     && { address:     formData.address }),
+        ...(formData.size        && { companySize: formData.size }),
+      };
+      
+      // 1. Create the company instantly using JSON payload
+      created = await createCompanyMutation(payload).unwrap();
+
+      // 2. Upload the logo in the background if selected
+      if (logoFile && created?.id) {
         const fd = new FormData();
-        fd.append('name', formData.name.trim());
-        fd.append('ownerId', resolvedOwnerId);
-        if (formData.industry)    fd.append('industry',    formData.industry);
-        if (formData.description) fd.append('description', formData.description);
-        if (formData.phone)       fd.append('phone',       formData.phone);
-        if (formData.email)       fd.append('email',       formData.email);
-        if (formData.website)     fd.append('website',     formData.website);
-        if (formData.address)     fd.append('address',     formData.address);
-        if (formData.size)        fd.append('companySize', formData.size);
         fd.append('logo', logoFile as Blob);
-        created = await createCompanyMutation(fd).unwrap();
-      } else {
-        const payload: CreateCompanyPayload = {
-          name: formData.name.trim(),
-          ownerId: resolvedOwnerId,
-          ...(formData.industry    && { industry:    formData.industry }),
-          ...(formData.description && { description: formData.description }),
-          ...(formData.phone       && { phone:       formData.phone }),
-          ...(formData.email       && { email:       formData.email }),
-          ...(formData.website     && { website:     formData.website }),
-          ...(formData.address     && { address:     formData.address }),
-          ...(formData.size        && { companySize: formData.size }),
-        };
-        created = await createCompanyMutation(payload).unwrap();
+        
+        // Fire and forget (runs in background without blocking UI)
+        updateCompanyMutation({ id: created.id, data: fd }).unwrap()
+          .catch(err => console.error('Failed to upload background logo:', err));
       }
 
       onCreateCompany(created);
