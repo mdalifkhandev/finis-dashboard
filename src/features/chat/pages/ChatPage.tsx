@@ -206,7 +206,7 @@ export function ChatPage() {
     );
 
     const isReadOnly = activeTab === 'chat'
-        ? true
+        ? currentUser?.role === 'super_admin'
         : (selectedThread?.isReadOnly ?? false);
     const isBlocked = selectedThread?.isBlocked ?? false;
 

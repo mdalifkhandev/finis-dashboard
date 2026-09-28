@@ -74,6 +74,7 @@ export interface AdminUser {
     status: string;
     avatarUrl: string | null;
     lastLoginAt: string | null;
+    isExemptFromSubscription?: boolean;
 }
 
 export interface AdminDetail {
@@ -84,6 +85,7 @@ export interface AdminDetail {
     phone: string | null;
     role: string;
     status: string;
+    isExemptFromSubscription?: boolean;
     employeeId: string | null;
     department: string | null;
     dateOfBirth: string | null;
@@ -240,6 +242,15 @@ export const teamManagementApi = createApi({
             query: (id) => `/super_admin/team/users/${id}`,
             transformResponse: (res: ApiEnvelope<AdminDetail>) => res.data,
             providesTags: (_result, _err, id) => [{ type: 'AdminDetail', id }],
+        }),
+
+        // PATCH /super-admin/users/:id/toggle-subscription-exemption
+        toggleSubscriptionExemption: builder.mutation<{ isExemptFromSubscription: boolean }, string>({
+            query: (id) => ({
+                url: `/super-admin/users/${id}/toggle-subscription-exemption`,
+                method: 'PATCH',
+            }),
+            invalidatesTags: (_result, _err, id) => [{ type: 'AdminDetail', id }, 'AdminList'],
         }),
 
         // POST /auth/invite
