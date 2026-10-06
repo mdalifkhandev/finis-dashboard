@@ -558,7 +558,7 @@ export function TenantsPage() {
               header: 'Actions',
               render: (tenant) => (
                 <div className="flex items-center gap-2">
-                  <Link to={`/tenants/${tenant.id}`}>
+                  <Link to={`/companies/${tenant.id}`}>
                     <Button size="sm" variant="outline">
                       <ShieldCheck className="w-4 h-4 mr-2" />
                       View

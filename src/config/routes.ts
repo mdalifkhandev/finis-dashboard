@@ -60,6 +60,9 @@ export const ROUTES = {
     SETTINGS: '/settings',
     NOTIFICATIONS: '/notifications',
 
+    // Expenses
+    EXPENSES: '/expenses',
+
     // Inventory
     INVENTORY: '/inventory',
 

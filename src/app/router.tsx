@@ -38,6 +38,7 @@ const PayrollPage = lazy(() => import('@/features/payroll/pages/PayrollPage').th
 const PublicContentEditorPage = lazy(() => import('@/features/public-content/pages/PublicContentEditorPage').then((m) => ({ default: m.PublicContentEditorPage })));
 const NotificationsPage = lazy(() => import('@/features/dashboard/pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })));
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage })));
+const ExpensesPage = lazy(() => import('@/features/expenses/pages/ExpensesPage').then((m) => ({ default: m.ExpensesPage })));
 
 function LoadingFallback() {
     return (
@@ -101,6 +102,7 @@ export function AppRouter() {
                     <Route path={ROUTES.TIME_ADJUSTMENTS} element={<TimeAdjustmentRequestsPage />} />
                     <Route path={ROUTES.GEOFENCING} element={<GeofencingPage />} />
                     <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
+                    <Route path={ROUTES.EXPENSES} element={<ExpensesPage />} />
                     <Route path={ROUTES.QUOTES} element={<QuoteLibraryPage />} />
                     <Route path={ROUTES.CHAT} element={<ChatPage />} />
                     <Route path={ROUTES.INVENTORY} element={<InventoryPage />} />
