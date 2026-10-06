@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle, XCircle, DollarSign, FileText, Search, ExternalLink, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle, DollarSign, FileText, Search, ExternalLink, Loader2, Plus, Upload } from 'lucide-react';
 import { Card } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
@@ -53,6 +53,54 @@ export function ExpensesPage() {
     const [statusFilter, setStatusFilter] = useState('all');
     const [isLoading, setIsLoading] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
+
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [newExpense, setNewExpense] = useState({
+        title: '',
+        expenseDate: new Date().toISOString().split('T')[0],
+        subtotal: 0,
+        tax: 0,
+        totalAmount: 0,
+        category: 'Miscellaneous',
+        paymentMethod: 'Cash',
+        projectId: '',
+    });
+    const [receiptFile, setReceiptFile] = useState<File | null>(null);
+    const [isCreating, setIsCreating] = useState(false);
+
+    const handleCreateExpense = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsCreating(true);
+        try {
+            if (receiptFile) {
+                await apiClient.uploadFile(
+                    API_ENDPOINTS.EXPENSES.CREATE,
+                    receiptFile,
+                    { ...newExpense, action: 'SUBMITTED' },
+                    'receipt'
+                );
+            } else {
+                await apiClient.post(API_ENDPOINTS.EXPENSES.CREATE, { ...newExpense, action: 'SUBMITTED' });
+            }
+            setShowCreateModal(false);
+            setNewExpense({
+                title: '',
+                expenseDate: new Date().toISOString().split('T')[0],
+                subtotal: 0,
+                tax: 0,
+                totalAmount: 0,
+                category: 'Miscellaneous',
+                paymentMethod: 'Cash',
+                projectId: '',
+            });
+            setReceiptFile(null);
+            fetchExpenses();
+        } catch (err) {
+            console.error('Failed to create expense:', err);
+        } finally {
+            setIsCreating(false);
+        }
+    };
 
     // Local state for modal editing
     const [editProjectId, setEditProjectId] = useState('');
@@ -152,11 +200,18 @@ export function ExpensesPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <PageHeader
-                title="Expense & Receipt Management"
-                description="Review and approve worker expense submissions"
-                icon={DollarSign}
-            />
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <PageHeader
+                    title="Expense & Receipt Management"
+                    description="Review and approve worker expense submissions"
+                    icon={DollarSign}
+                />
+                <Button onClick={() => setShowCreateModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Expense
+                </Button>
+            
+            </div>
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -440,6 +495,136 @@ export function ExpensesPage() {
                     </div>
                 </Modal>
             )}
+
+            {/* Create Expense Modal */}
+            <Modal
+                isOpen={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                title="Create New Expense"
+            >
+                <form onSubmit={handleCreateExpense} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Title / Description *</label>
+                        <Input
+                            required
+                            value={newExpense.title}
+                            onChange={e => setNewExpense({ ...newExpense, title: e.target.value })}
+                            placeholder="e.g., Team Lunch"
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Expense Date *</label>
+                            <Input
+                                required
+                                type="date"
+                                value={newExpense.expenseDate}
+                                onChange={e => setNewExpense({ ...newExpense, expenseDate: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Project *</label>
+                            <Select
+                                required
+                                value={newExpense.projectId}
+                                onChange={e => setNewExpense({ ...newExpense, projectId: e.target.value })}
+                                options={[
+                                    { value: '', label: 'Select Project...' },
+                                    ...projects.map(p => ({ value: p.id, label: p.name }))
+                                ]}
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Subtotal</label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                value={newExpense.subtotal}
+                                onChange={e => {
+                                    const val = Number(e.target.value);
+                                    setNewExpense({ ...newExpense, subtotal: val, totalAmount: val + newExpense.tax });
+                                }}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Tax</label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                value={newExpense.tax}
+                                onChange={e => {
+                                    const val = Number(e.target.value);
+                                    setNewExpense({ ...newExpense, tax: val, totalAmount: newExpense.subtotal + val });
+                                }}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Total Amount *</label>
+                            <Input
+                                required
+                                type="number"
+                                step="0.01"
+                                value={newExpense.totalAmount}
+                                onChange={e => setNewExpense({ ...newExpense, totalAmount: Number(e.target.value) })}
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                            <Select
+                                value={newExpense.category}
+                                onChange={e => setNewExpense({ ...newExpense, category: e.target.value })}
+                                options={[
+                                    'Travel', 'Meals', 'Hotel', 'Fuel', 'Office Supplies', 'Equipment',
+                                    'Software', 'Subscriptions', 'Training', 'Marketing', 'Construction Materials',
+                                    'Vehicle Expenses', 'Utilities', 'Miscellaneous'
+                                ].map(c => ({ value: c, label: c }))}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                            <Select
+                                value={newExpense.paymentMethod}
+                                onChange={e => setNewExpense({ ...newExpense, paymentMethod: e.target.value })}
+                                options={[
+                                    'Cash', 'Personal Card', 'Corporate Card', 'Bank Transfer', 'Mobile Banking', 'Other'
+                                ].map(c => ({ value: c, label: c }))}
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Receipt (Optional)</label>
+                        <div className="flex items-center justify-center w-full">
+                            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <Upload className="w-8 h-8 mb-4 text-gray-500" />
+                                    <p className="text-sm text-gray-500 font-semibold">
+                                        {receiptFile ? receiptFile.name : 'Click to upload receipt'}
+                                    </p>
+                                </div>
+                                <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/jpeg, image/png, application/pdf"
+                                    onChange={e => setReceiptFile(e.target.files?.[0] || null)}
+                                />
+                            </label>
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4 border-t">
+                        <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={isCreating} className="bg-blue-600 hover:bg-blue-700 text-white">
+                            {isCreating ? 'Creating...' : 'Create Expense'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
+
         </div>
     );
 }

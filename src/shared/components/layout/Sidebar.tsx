@@ -43,7 +43,8 @@ const menuItems = [
     section: 'FINANCIAL',
     items: [
       { icon: FileBarChart, label: 'Reports', path: '/reports' },
-      { icon: ScrollText, label: 'Quotes Library', path: '/quotes' }
+      { icon: ScrollText, label: 'Quotes Library', path: '/quotes' },
+      { icon: DollarSign, label: 'Expenses', path: '/expenses' }
     ]
   },
   {
@@ -81,7 +82,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           if (!isSuperAdmin && (item.path === '/tenants' || item.path === '/admins')) {
             return false;
           }
-          if (isSuperAdmin && (item.path === '/reports' || item.path === '/quotes')) {
+          if (isSuperAdmin && (item.path === '/reports' || item.path === '/quotes' || item.path === '/payroll' || item.path === '/expenses')) {
             return false;
           }
           return true;

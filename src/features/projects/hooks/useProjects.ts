@@ -714,7 +714,7 @@ export function useProjectDocuments(projectId: string) {
                 : API_ENDPOINTS.PROJECTS.DOCUMENTS(projectId);
             const response = await apiClient.get<any>(endpoint);
             const data = unwrap(response.data);
-            return Array.isArray(data) ? data : [];
+            return data?.documents && Array.isArray(data.documents) ? data.documents : (Array.isArray(data) ? data : []);
         },
         enabled: !!projectId,
     });

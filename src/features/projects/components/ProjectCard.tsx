@@ -146,7 +146,7 @@ export function ProjectCard({
           </div>
           <div>
             <p className="text-xs text-gray-500">Deadline</p>
-            <p className="font-semibold text-gray-900">{project.endDate}</p>
+            <p className="font-semibold text-gray-900">{project.endDate ? project.endDate.split('T')[0] : 'N/A'}</p>
           </div>
         </div>
 
@@ -163,7 +163,7 @@ export function ProjectCard({
           </div>
           <div className="flex items-center gap-1 text-xs text-gray-500">
             <Calendar className="h-3 w-3" />
-            <span>{project.startDate}</span>
+            <span>{project.startDate ? project.startDate.split('T')[0] : 'N/A'}</span>
           </div>
         </div>
       </div>

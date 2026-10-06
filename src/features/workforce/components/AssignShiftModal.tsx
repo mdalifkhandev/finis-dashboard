@@ -39,7 +39,7 @@ export function AssignShiftModal({ isOpen, onClose, worker }: AssignShiftModalPr
 
         setIsLoading(true);
         try {
-            const workerId = worker.memberId || worker.id;
+            const workerId = worker.userId || worker.id;
             await apiClient.post(`/admin/projects/${projectId}/schedule/assign`, {
                 userIds: [workerId],
                 startTime,
