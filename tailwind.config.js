@@ -1,4 +1,3 @@
-
 module.exports = {
   darkMode: "selector",
   content: [
@@ -70,4 +69,4 @@ module.exports = {
     },
   },
   plugins: [],
-}; 
+};

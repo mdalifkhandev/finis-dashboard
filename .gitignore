@@ -13,8 +13,6 @@ dist-ssr
 *.local
 
 # Environment variables
-.env
-.env.*
 .env*.local
 !.env.example
 
@@ -30,3 +28,4 @@ dist-ssr
 Thumbs.db
 .agents
 
+config.bat
