@@ -33,6 +33,7 @@ import {
   QuoteMeasurementType,
   QuoteWorkCategory,
   QuoteWorkItem,
+  useCreateQuoteMutation,
   useCreateQuoteMeasurementTypeMutation,
   useCreateQuoteWorkCategoryMutation,
   useCreateQuoteWorkItemMutation,
@@ -76,6 +77,17 @@ interface MeasurementDraft {
   isActive: boolean;
 }
 
+interface QuoteDraft {
+  projectType: string;
+  propertyType: string;
+  unitType: string;
+  title: string;
+  quantity: string;
+  unit: string;
+  unitPrice: string;
+  notes: string;
+}
+
 const EMPTY_CATEGORY_DRAFT: CategoryDraft = {
   name: '',
   description: '',
@@ -100,6 +112,17 @@ const EMPTY_MEASUREMENT_DRAFT: MeasurementDraft = {
   label: '',
   sortOrder: '0',
   isActive: true,
+};
+
+const EMPTY_QUOTE_DRAFT: QuoteDraft = {
+  projectType: '',
+  propertyType: '',
+  unitType: '',
+  title: '',
+  quantity: '1',
+  unit: '',
+  unitPrice: '',
+  notes: '',
 };
 
 function toSelectOptions(options: QuoteSelectorOption[]) {
@@ -178,7 +201,9 @@ export function QuoteLibraryPage() {
   const [createItem, { isLoading: isCreatingItem }] = useCreateQuoteWorkItemMutation();
   const [updateItem, { isLoading: isUpdatingItem }] = useUpdateQuoteWorkItemMutation();
   const [disableItem] = useDisableQuoteWorkItemMutation();
+  const [createQuote, { isLoading: isCreatingQuote }] = useCreateQuoteMutation();
 
+  const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [measurementModalOpen, setMeasurementModalOpen] = useState(false);
   const [itemModalOpen, setItemModalOpen] = useState(false);
@@ -188,6 +213,7 @@ export function QuoteLibraryPage() {
   const [categoryDraft, setCategoryDraft] = useState<CategoryDraft>(EMPTY_CATEGORY_DRAFT);
   const [measurementDraft, setMeasurementDraft] = useState<MeasurementDraft>(EMPTY_MEASUREMENT_DRAFT);
   const [itemDraft, setItemDraft] = useState<ItemDraft>(EMPTY_ITEM_DRAFT);
+  const [quoteDraft, setQuoteDraft] = useState<QuoteDraft>(EMPTY_QUOTE_DRAFT);
 
   const selectorOptions = selectors ?? {
     projectTypes: [],
@@ -215,6 +241,17 @@ export function QuoteLibraryPage() {
     { label: 'Selector Sets', value: '8', hint: 'Project + property + unit', icon: Layers3 },
     { label: 'Measurement Types', value: measurementTypes.length, hint: `${activeMeasurementTypes} active`, icon: Wrench },
   ];
+
+  const openCreateQuote = () => {
+    setQuoteDraft({
+      ...EMPTY_QUOTE_DRAFT,
+      projectType: selectorOptions.projectTypes[0]?.value ?? '',
+      propertyType: selectorOptions.propertyTypes[0]?.value ?? '',
+      unitType: selectorOptions.unitTypes[0]?.value ?? '',
+      unit: selectorOptions.measurementTypes[0]?.value ?? '',
+    });
+    setQuoteModalOpen(true);
+  };
 
   const openCreateCategory = () => {
     setEditingCategory(null);
@@ -288,6 +325,27 @@ export function QuoteLibraryPage() {
     setCategoryModalOpen(false);
     setEditingCategory(null);
     setCategoryDraft(EMPTY_CATEGORY_DRAFT);
+  };
+
+  const handleQuoteSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const payload = {
+      projectType: quoteDraft.projectType,
+      propertyType: quoteDraft.propertyType,
+      unitType: quoteDraft.unitType,
+      title: quoteDraft.title.trim(),
+      quantity: Number(quoteDraft.quantity || 1),
+      unit: quoteDraft.unit.trim() || undefined,
+      unitPrice: quoteDraft.unitPrice === '' ? 0 : Number(quoteDraft.unitPrice),
+      notes: quoteDraft.notes.trim() || undefined,
+      isCustom: true,
+    };
+
+    if (!payload.projectType || !payload.propertyType || !payload.unitType || !payload.title) return;
+
+    await createQuote(payload).unwrap();
+    setQuoteModalOpen(false);
+    setQuoteDraft(EMPTY_QUOTE_DRAFT);
   };
 
   const openCreateMeasurement = () => {
@@ -541,6 +599,10 @@ export function QuoteLibraryPage() {
         description="Manage categories and master work items for the quotation module."
         icon={Archive}
       >
+        <Button onClick={openCreateQuote}>
+          <Plus className="mr-2 h-4 w-4" />
+          New Quote
+        </Button>
         <Button variant="outline" onClick={openCreateCategory}>
           <Tags className="mr-2 h-4 w-4" />
           New Category
@@ -549,7 +611,7 @@ export function QuoteLibraryPage() {
           <Wrench className="mr-2 h-4 w-4" />
           New Measurement
         </Button>
-        <Button onClick={openCreateItem}>
+        <Button variant="outline" onClick={openCreateItem}>
           <Plus className="mr-2 h-4 w-4" />
           New Work Item
         </Button>
@@ -828,6 +890,106 @@ export function QuoteLibraryPage() {
           </CardContent>
         </Card>
       )}
+
+      <QuoteFormModal
+        open={quoteModalOpen}
+        onClose={() => setQuoteModalOpen(false)}
+        title="New Quote"
+      >
+        <form className="space-y-5" onSubmit={handleQuoteSubmit}>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400">Project Type</label>
+              <Select
+                value={quoteDraft.projectType}
+                onChange={(e) => setQuoteDraft((draft) => ({ ...draft, projectType: e.target.value }))}
+                options={toSelectOptions(selectorOptions.projectTypes)}
+                placeholder="Select project type"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400">Property Type</label>
+              <Select
+                value={quoteDraft.propertyType}
+                onChange={(e) => setQuoteDraft((draft) => ({ ...draft, propertyType: e.target.value }))}
+                options={toSelectOptions(selectorOptions.propertyTypes)}
+                placeholder="Select property type"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400">Unit Type</label>
+              <Select
+                value={quoteDraft.unitType}
+                onChange={(e) => setQuoteDraft((draft) => ({ ...draft, unitType: e.target.value }))}
+                options={toSelectOptions(selectorOptions.unitTypes)}
+                placeholder="Select unit type"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-gray-400">Quote Title</label>
+            <Input
+              value={quoteDraft.title}
+              onChange={(e) => setQuoteDraft((draft) => ({ ...draft, title: e.target.value }))}
+              placeholder="e.g. Room painting package"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400">Quantity</label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={quoteDraft.quantity}
+                onChange={(e) => setQuoteDraft((draft) => ({ ...draft, quantity: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400">Unit</label>
+              <Input
+                value={quoteDraft.unit}
+                onChange={(e) => setQuoteDraft((draft) => ({ ...draft, unit: e.target.value }))}
+                placeholder="room, sq ft, pcs"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400">Unit Price</label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={quoteDraft.unitPrice}
+                onChange={(e) => setQuoteDraft((draft) => ({ ...draft, unitPrice: e.target.value }))}
+                placeholder="150"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-gray-400">Notes</label>
+            <Textarea
+              value={quoteDraft.notes}
+              onChange={(e) => setQuoteDraft((draft) => ({ ...draft, notes: e.target.value }))}
+              placeholder="Optional quote notes"
+              rows={3}
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 border-t border-gray-100 pt-4">
+            <Button type="button" variant="outline" onClick={() => setQuoteModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isCreatingQuote || !quoteDraft.title.trim()}>
+              {isCreatingQuote ? 'Creating...' : 'Create Quote'}
+            </Button>
+          </div>
+        </form>
+      </QuoteFormModal>
 
       <QuoteFormModal
         open={categoryModalOpen}

@@ -48,6 +48,7 @@ export function ProjectTasks() {
     const [newTask, setNewTask] = useState<{
         title: string;
         description: string;
+        price: number;
         estimatedHours: number;
         allowSubTaskCreation: boolean;
         floorIds: string[];
@@ -55,15 +56,17 @@ export function ProjectTasks() {
     }>({
         title: '',
         description: '',
+        price: 0,
         estimatedHours: 0,
         allowSubTaskCreation: false,
         floorIds: [],
         unitIds: []
     });
 
-    const [newSubTask, setNewSubTask] = useState<{ title: string; description: string; estimatedHours: number; unitIds: string[] }>({
+    const [newSubTask, setNewSubTask] = useState<{ title: string; description: string; price: number; estimatedHours: number; unitIds: string[] }>({
         title: '',
         description: '',
+        price: 0,
         estimatedHours: 0,
         unitIds: []
     });
@@ -80,6 +83,7 @@ export function ProjectTasks() {
                 projectId,
                 title: newTask.title,
                 description: newTask.description,
+                price: newTask.price,
                 estimatedHours: newTask.estimatedHours,
                 allowSubTaskCreation: newTask.allowSubTaskCreation,
                 ...(newTask.floorIds.length ? { floorIds: newTask.floorIds } : {}),
@@ -92,7 +96,7 @@ export function ProjectTasks() {
             }
             setIsAddModalOpen(false);
             setEditTaskId(null);
-            setNewTask({ title: '', description: '', estimatedHours: 0, allowSubTaskCreation: false, floorIds: [], unitIds: [] });
+            setNewTask({ title: '', description: '', price: 0, estimatedHours: 0, allowSubTaskCreation: false, floorIds: [], unitIds: [] });
         } catch (err) {
             console.error('Error saving task', err);
         }
@@ -102,6 +106,7 @@ export function ProjectTasks() {
         setNewTask({
             title: task.title,
             description: task.description || '',
+            price: Number(task.price || 0),
             estimatedHours: task.estimatedHours || 0,
             allowSubTaskCreation: task.allowSubTaskCreation ?? false,
             floorIds: task.taskFloors?.map((tf: any) => tf.floor?.id).filter(Boolean) || [],
@@ -146,11 +151,12 @@ export function ProjectTasks() {
             await createSubTask(selectedTaskForSubTask.id, {
                 title: newSubTask.title,
                 description: newSubTask.description,
+                price: newSubTask.price,
                 estimatedHours: newSubTask.estimatedHours,
                 unitIds: newSubTask.unitIds
             });
             setIsSubTaskModalOpen(false);
-            setNewSubTask({ title: '', description: '', estimatedHours: 0, unitIds: [] });
+            setNewSubTask({ title: '', description: '', price: 0, estimatedHours: 0, unitIds: [] });
             setSelectedTaskForSubTask(null);
         } catch (err) {
             console.error('Error creating subtask', err);
@@ -180,7 +186,7 @@ export function ProjectTasks() {
                 onClose={() => {
                     setIsAddModalOpen(false);
                     setEditTaskId(null);
-                    setNewTask({ title: '', description: '', estimatedHours: 0, allowSubTaskCreation: false, floorIds: [], unitIds: [] });
+                    setNewTask({ title: '', description: '', price: 0, estimatedHours: 0, allowSubTaskCreation: false, floorIds: [], unitIds: [] });
                 }}
                 title={editTaskId ? "Edit Task" : "Create Task"}
                 maxWidth="md"
@@ -205,6 +211,17 @@ export function ProjectTasks() {
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Task Price</Label>
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={newTask.price || ''}
+                                    onChange={(e) => setNewTask({ ...newTask, price: Number(e.target.value) })}
+                                    placeholder="e.g. 150"
+                                />
+                            </div>
                             <div className="space-y-2">
                                 <Label>Estimated Hours</Label>
                                 <Input
@@ -415,7 +432,7 @@ export function ProjectTasks() {
                             onAddSubtask={(t) => { 
                                 setSelectedTaskForSubTask(t);
                                 const defaultUnitIds = t.taskUnits?.[0]?.unit?.id ? [t.taskUnits[0].unit.id] : [];
-                                setNewSubTask({ title: '', description: '', estimatedHours: 0, unitIds: defaultUnitIds });
+                                setNewSubTask({ title: '', description: '', price: 0, estimatedHours: 0, unitIds: defaultUnitIds });
                                 setIsSubTaskModalOpen(true); 
                             }}
                         />
@@ -451,7 +468,7 @@ export function ProjectTasks() {
                 onClose={() => {
                     setIsSubTaskModalOpen(false);
                     setSelectedTaskForSubTask(null);
-                    setNewSubTask({ title: '', description: '', estimatedHours: 0, unitIds: [] });
+                    setNewSubTask({ title: '', description: '', price: 0, estimatedHours: 0, unitIds: [] });
                 }}
                 title="Create Subtask"
                 maxWidth="md"
@@ -480,6 +497,17 @@ export function ProjectTasks() {
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Subtask Price</Label>
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={newSubTask.price || ''}
+                                    onChange={(e) => setNewSubTask(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                                    placeholder="e.g. 150"
+                                />
+                            </div>
                             <div className="space-y-2">
                                 <Label>Est. Hours</Label>
                                 <Input
