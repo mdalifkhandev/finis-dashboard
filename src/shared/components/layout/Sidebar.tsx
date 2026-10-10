@@ -82,7 +82,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           if (!isSuperAdmin && (item.path === '/tenants' || item.path === '/admins')) {
             return false;
           }
-          if (isSuperAdmin && (item.path === '/reports' || item.path === '/quotes' || item.path === '/payroll' || item.path === '/expenses')) {
+          if (isSuperAdmin && (item.path === '/reports' || item.path === '/payroll' || item.path === '/expenses')) {
             return false;
           }
           return true;
